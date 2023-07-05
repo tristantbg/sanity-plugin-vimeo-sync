@@ -2,8 +2,8 @@ import { MdSync } from 'react-icons/md'
 import { getVideos } from './vimeoConnector'
 // import styles from './VimeoSync.css'
 
-export function VimeoSyncView({ config }) {
-  const vimeoOptions = { accessToken: process.env.SANITY_VIMEO_ACCESS_TOKEN, folderId: process.env.SANITY_VIMEO_FOLDER_ID }
+export function VimeoSyncView(config) {
+  console.log(config)
   return (
     <div
       style={{
@@ -14,7 +14,7 @@ export function VimeoSyncView({ config }) {
         padding: '0.1em',
         margin: '1em'
       }}
-      onClick={getVideos(vimeoOptions)}
+      onClick={getVideos(config)}
     >
       <h1 style={{ lineHeight: 0.8 }}>
         <MdSync />
