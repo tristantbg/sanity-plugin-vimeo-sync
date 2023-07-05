@@ -1,0 +1,56 @@
+{
+  "public": true,
+  "name": "sanity-plugin-vimeo-sync",
+  "version": "0.0.1",
+  "author": "Tristan Bagot",
+  "description": "Vimeo Sync to Sanity Content Studio",
+  "homepage": "https://github.com/tristantbg/sanity-plugin-vimeo-sync#readme",
+  "keywords": [
+    "sanity",
+    "plugin",
+    "part",
+    "dashboard",
+    "widget",
+    "documents"
+  ],
+  "main": "lib/index.js",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tristantbg/sanity-plugin-vimeo-sync/issues"
+  },
+  "scripts": {
+    "build": "babel src -d lib --copy-files",
+    "clean": "rimraf lib",
+    "prebuild": "npm run clean",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tristantbg/sanity-plugin-vimeo-sync.git"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.24.1",
+    "babel-eslint": "^7.2.3",
+    "babel-plugin-syntax-class-properties": "^6.13.0",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-react": "^6.24.1",
+    "eslint": "^4.3.0",
+    "eslint-config-sanity": "^2.1.4",
+    "eslint-plugin-react": "^7.1.0",
+    "rimraf": "^2.6.3"
+  },
+  "peerDependencies": {
+    "@sanity/base": "^1",
+    "@sanity/components": "^1",
+    "prop-types": "^15.6 || ^16 || ^17",
+    "react": "^16 || ^17"
+  },
+  "dependencies": {
+    "axios": "^0.21.1",
+    "lodash": "^4.17.15",
+    "nanoid": "^3.1.20",
+    "rxjs": "^6.6.3"
+  }
+}
