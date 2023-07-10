@@ -1,8 +1,6 @@
 # sanity-plugin-vimeo-sync
 Sync Vimeo PRO videos into Sanity
 
-
-
 ## Usage
 Assuming you already have a functional Dashboard in your Sanity Content Studio.
 
@@ -12,18 +10,23 @@ Assuming you already have a functional Dashboard in your Sanity Content Studio.
 sanity install sanity-plugin-vimeo-sync
 ```
 
-2. Update your `src/dashboardConfig.js` file by adding `{name: 'vimeo-sync'}` to the `widgets` array
-3. Restart your Studio
-
-
 There are some options required:
 
 ```js
-{
-  name: 'vimeo-sync',
-  options: {
-    accessToken: 'xxx',
-    folderId: 'xxx' // optional
-  }
-}
+import { VimeoSync } from 'sanity-plugin-vimeo-sync'
+
+export default defineConfig({
+  plugins: [
+    VimeoSync(),
+  ]
+})
+
+```
+
+.env.development
+.env.production
+
+```
+SANITY_STUDIO_VIMEO_ACCESS_TOKEN=xxx
+SANITY_STUDIO_VIMEO_FOLDER_ID=xxx
 ```
