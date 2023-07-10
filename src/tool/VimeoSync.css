@@ -1,42 +1,33 @@
-/* @import 'part:@sanity/base/theme/variables-style'; */
+.container {
+  padding: 2rem;
+}
 
 .container {
-  composes: container from 'part:@sanity/dashboard/widget-styles';
+  display: flex;
+  flex-direction: column;
 }
 
-.header {
-  composes: header from 'part:@sanity/dashboard/widget-styles';
+.icon {
+  margin-right: 0.5em;
+  font-size: 1.5em;
+  margin-top: 0.2em;
 }
 
-.title {
-  composes: title from 'part:@sanity/dashboard/widget-styles';
-}
-
-.content {
-  composes: content from 'part:@sanity/dashboard/widget-styles';
-  border-top: 1px solid var(--hairline-color);
-  padding: var(--small-padding) 0;
-}
-
-[data-ui='Button'] {
+button {
   cursor: pointer;
-}
-
-[data-ui='Button'] [data-ui='Text'] {
+  appearance: none;
+  border: none;
+  padding: 2em;
+  font-size: 1em;
   font-weight: 600;
+  background: black;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.link {
-  composes: item from 'part:@sanity/base/theme/layout/selectable-style';
-  display: block;
-  color: inherit;
-  text-decoration: inherit;
-  outline: none;
-  padding: var(--small-padding) var(--medium-padding);
-  height: 100%;
-}
-
-.footer {
-  composes: footer from 'part:@sanity/dashboard/widget-styles';
-  border-top: 1px solid var(--hairline-color);
+p {
+  margin: 0;
+  line-height: 1.5;
 }
