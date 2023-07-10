@@ -1,8 +1,8 @@
-.container {
+.container > div {
   padding: 2rem;
 }
 
-.container {
+.container > div {
   display: flex;
   flex-direction: column;
 }
