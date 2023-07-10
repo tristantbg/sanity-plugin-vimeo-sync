@@ -18,7 +18,7 @@ import VimeoObjectPictures from './schema/VimeoObjectPictures'
  * })
  * ```
  */
-export const VimeoSync = definePlugin(
+export const vimeoSync = definePlugin(
   (
     
       config = {}

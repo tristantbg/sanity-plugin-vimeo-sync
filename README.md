@@ -13,11 +13,11 @@ sanity install sanity-plugin-vimeo-sync
 There are some options required:
 
 ```js
-import { VimeoSync } from 'sanity-plugin-vimeo-sync'
+import { vimeoSync } from 'sanity-plugin-vimeo-sync'
 
 export default defineConfig({
   plugins: [
-    VimeoSync(),
+    vimeoSync(),
   ]
 })
 
@@ -30,3 +30,5 @@ export default defineConfig({
 SANITY_STUDIO_VIMEO_ACCESS_TOKEN=xxx
 SANITY_STUDIO_VIMEO_FOLDER_ID=xxx
 ```
+
+⚠️ Environment variables will be bundled with the application code
