@@ -42,19 +42,27 @@ jspm_packages
 # VS Code settings
 .vscode
 
-# IntelliJ
-.idea
-*.iml
+# Lockfiles
+/yarn.lock
 
 # Cache
 .cache
 
-# Yalc
-.yalc
+## TypeScript out
+dist/
+
+# IntelliJ
+.idea/
+*.iml
+
+# yalc
 yalc.lock
+.yalc
 
-# npm package zips
-*.tgz
+# Fixtures for tests that output files that will be verified
+test/fixtures/build/lib
+/test/fixtures/init/empty/*
+!test/fixtures/init/empty/.gitkeep
 
-# Compiled plugin
-dist
+
+

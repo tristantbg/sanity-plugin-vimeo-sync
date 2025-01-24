@@ -1,6 +1,13 @@
-*.js
 .eslintrc.js
 commitlint.config.js
 dist
 lint-staged.config.js
-package.config.ts
+node_modules
+test/fixtures
+coverage
+babel
+*.js
+v2-incompatible.js.template
+*.json
+assets/
+tap-snapshots/
