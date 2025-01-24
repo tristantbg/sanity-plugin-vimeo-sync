@@ -1,4 +1,4 @@
-import { nanoid } from 'nanoid'
+import {nanoid} from 'nanoid'
 
 /**
  * Shorthand helper for writing Sanity fields
@@ -14,11 +14,11 @@ export function quickFields(name, type = 'string', arrayOf = [], preview = []) {
     name,
     title: name.charAt(0).toUpperCase() + name.slice(1),
     type,
-  };
+  }
 
   if (arrayOf.length) {
-    if (type === 'array') field.of = arrayOf;
-    if (type === 'object') field.fields = arrayOf;
+    if (type === 'array') field.of = arrayOf
+    if (type === 'object') field.fields = arrayOf
   }
 
   if (preview.length) {
@@ -29,11 +29,11 @@ export function quickFields(name, type = 'string', arrayOf = [], preview = []) {
           subtitle: preview[1] || '',
           media: preview[2] || '',
         },
-      };
+      }
     }
   }
 
-  return field;
+  return field
 }
 
 /**
@@ -45,8 +45,8 @@ export function quickFields(name, type = 'string', arrayOf = [], preview = []) {
  */
 export function addKeys(array, uniqueArrayKey) {
   return array.map((item, index) => {
-    item._key = nanoid();
+    item._key = nanoid()
 
-    return item;
-  });
+    return item
+  })
 }

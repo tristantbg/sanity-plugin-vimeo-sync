@@ -1,5 +1,5 @@
-import { MdVideocam } from 'react-icons/md'
-import { quickFields } from '../helpers'
+import {MdVideocam} from 'react-icons/md'
+import {quickFields} from '../helpers'
 
 export default {
   name: 'vimeo',
@@ -17,22 +17,22 @@ export default {
     quickFields('description'),
     quickFields('pictures', 'array', [quickFields('vimeoPictures', 'vimeoPictures')]),
     quickFields('link', 'url'),
-    quickFields('duration', 'number')
+    quickFields('duration', 'number'),
   ],
   preview: {
     select: {
       title: 'name',
       subtitle: 'link',
       description: 'description',
-      media: 'pictures.2.link'
+      media: 'pictures.2.link',
     },
     prepare(selection) {
-      const { title, subtitle, media } = selection
+      const {title, subtitle, media} = selection
       return {
         title,
         subtitle,
-        media: <img style={{ objectFit: 'cover' }} src={media} alt={`${title}`} />
+        media: <img style={{objectFit: 'cover'}} src={media} alt={`${title}`} />,
       }
-    }
-  }
+    },
+  },
 }

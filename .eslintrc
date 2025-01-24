@@ -1,11 +1,15 @@
 {
+  "root": true,
   "env": {
     "node": true,
     "browser": true
   },
-  "parser": "babel-eslint",
   "extends": [
     "sanity",
-    "sanity/react"
+    "sanity/typescript",
+    "sanity/react",
+    "plugin:react-hooks/recommended",
+    "plugin:prettier/recommended",
+    "plugin:react/jsx-runtime"
   ]
 }

@@ -1,15 +1,14 @@
-import { useClient } from 'sanity'
-import { useState } from 'react'
-import { MdSync } from 'react-icons/md'
-import { addKeys } from '../helpers'
-import styles from './VimeoSync.css'
+import {useState} from 'react'
+import {MdSync} from 'react-icons/md'
+import {useClient} from 'sanity'
+import {addKeys} from '../helpers'
 
 export const VimeoSyncView = () => {
   const [count, setCount] = useState(false)
   const [countPages, setCountPages] = useState(false)
   const [doingPage, setDoingPage] = useState(false)
 
-  const client = useClient({ apiVersion: '2023-05-03' })
+  const client = useClient({apiVersion: '2023-05-03'})
   const videos = []
   const vimeoAccessToken = process.env.SANITY_STUDIO_VIMEO_ACCESS_TOKEN
   const vimeoFolderId = process.env.SANITY_STUDIO_VIMEO_FOLDER_ID
@@ -25,8 +24,8 @@ export const VimeoSyncView = () => {
 
     fetch(`https://api.vimeo.com${url}`, {
       headers: {
-        Authorization: `Bearer ${vimeoAccessToken}`
-      }
+        Authorization: `Bearer ${vimeoAccessToken}`,
+      },
     })
       .then((res) => res.json())
       .then((res) => {
@@ -47,17 +46,17 @@ export const VimeoSyncView = () => {
               name: video.name,
               pictures: addKeys(video.pictures.sizes, 'link'),
               srcset: addKeys(video.files, 'md5'),
-              width: video.width
+              width: video.width,
             }
             transaction.createOrReplace(videoObject)
             videos.push(videoObject)
           } else {
             canFetchFiles = false
             setDoingPage(
-              `This token doesn’t have the "files" scope or this account is not a PRO account`
+              `This token doesn’t have the "files" scope or this account is not a PRO account`,
             )
             console.warn(
-              `This token doesn’t have the "files" scope or this account is not a PRO account`
+              `This token doesn’t have the "files" scope or this account is not a PRO account`,
             )
           }
         })
@@ -68,7 +67,7 @@ export const VimeoSyncView = () => {
             .then((response) =>
               nextPage
                 ? importVimeo(nextPage)
-                : (setDoingPage(`Finished`), deleteIncompatibleVimeoDocuments(videos))
+                : (setDoingPage(`Finished`), deleteIncompatibleVimeoDocuments(videos)),
             )
             .catch((error) => {
               console.error('Update failed: ', error.message)
@@ -103,8 +102,8 @@ export const VimeoSyncView = () => {
   function fetchVimeo() {
     fetch(vimeoFetchUrl, {
       headers: {
-        Authorization: `Bearer ${vimeoAccessToken}`
-      }
+        Authorization: `Bearer ${vimeoAccessToken}`,
+      },
     })
       .then((res) => res.json())
       .then((res) => {
@@ -119,12 +118,12 @@ export const VimeoSyncView = () => {
     <div className="container">
       {vimeoAccessToken && (
         <div>
-          <button style={{ marginBottom: '1rem' }} onClick={() => fetchVimeo()}>
+          <button style={{marginBottom: '1rem'}} onClick={() => fetchVimeo()}>
             <span className="icon">
               {!doingPage || doingPage === 'Finished' ? (
                 <MdSync />
               ) : (
-                <MdSync style={{ opacity: 0 }} />
+                <MdSync style={{opacity: 0}} />
               )}
             </span>
             <span>{!doingPage || doingPage === 'Finished' ? 'Load Vimeo videos' : doingPage}</span>
@@ -142,7 +141,7 @@ export const VimeoSyncView = () => {
         </div>
       )}
 
-      {!vimeoAccessToken && <p>No Access Token found in .env.development</p>}
+      {!vimeoAccessToken && <p>No Access Token found. Please check your .env</p>}
     </div>
   )
 }
