@@ -1,4 +1,4 @@
-import { quickFields } from '../helpers';
+import {quickFields} from '../helpers'
 
 export default quickFields(
   'vimeoPictures',
@@ -14,4 +14,4 @@ export default quickFields(
     quickFields('height', 'number'),
   ],
   ['link', 'md5'],
-);
+)
