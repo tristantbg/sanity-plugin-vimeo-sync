@@ -1,17 +1,17 @@
-import {useState} from 'react'
-import {MdSync} from 'react-icons/md'
-import {useClient} from 'sanity'
-import {addKeys} from '../helpers'
+import { useState } from 'react'
+import { MdSync } from 'react-icons/md'
+import { useClient } from 'sanity'
+import { addKeys } from '../helpers'
 
-export const VimeoSyncView = () => {
+export const VimeoSyncView = ({accessToken, folderId}) => {
   const [count, setCount] = useState(false)
   const [countPages, setCountPages] = useState(false)
   const [doingPage, setDoingPage] = useState(false)
 
   const client = useClient({apiVersion: '2023-05-03'})
   const videos = []
-  const vimeoAccessToken = process.env.SANITY_STUDIO_VIMEO_ACCESS_TOKEN
-  const vimeoFolderId = process.env.SANITY_STUDIO_VIMEO_FOLDER_ID
+  const vimeoAccessToken = accessToken || process.env.SANITY_STUDIO_VIMEO_ACCESS_TOKEN
+  const vimeoFolderId = folderId ||  process.env.SANITY_STUDIO_VIMEO_FOLDER_ID
   const vimeoFetchUrlParams =
     '?fields=uri,modified_time,created_time,name,description,link,pictures,files,width,height,duration&per_page=100'
   const vimeoFetchUrl = vimeoFolderId
