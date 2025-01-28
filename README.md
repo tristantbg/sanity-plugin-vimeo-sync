@@ -18,7 +18,12 @@ import {vimeoSync} from 'sanity-plugin-vimeo-sync'
 
 export default defineConfig({
   //...
-  plugins: [vimeoSync({})],
+  plugins: [
+    vimeoSync({
+      accessToken: '',
+      folderId: '', // optional
+    }),
+  ],
 })
 ```
 
