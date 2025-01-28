@@ -26,7 +26,6 @@
     },
     "./package.json": "./package.json"
   },
-  "browserslist": "extends @sanity/browserslist-config",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
@@ -43,6 +42,7 @@
     "prepublishOnly": "npm run build",
     "watch": "pkg-utils watch --strict"
   },
+  "browserslist": "extends @sanity/browserslist-config",
   "dependencies": {
     "@sanity/incompatible-plugin": "^1.0.5",
     "nanoid": "^5.0.9",
