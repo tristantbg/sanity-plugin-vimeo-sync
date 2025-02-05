@@ -1,23 +1,42 @@
 import {MdVideocam} from 'react-icons/md'
+import {defineType, isDev} from 'sanity'
 import {quickFields} from '../helpers'
 
-export default {
+export default defineType({
   name: 'vimeo',
   title: 'Vimeo',
   description: 'Vimeo videos',
   icon: MdVideocam,
   type: 'document',
   __experimental_omnisearch_visibility: false,
+  groups: [
+    {
+      name: 'content',
+      title: 'Content',
+      default: true,
+    },
+    {
+      name: 'dev-info',
+      title: 'Dev Info',
+      hidden: !isDev,
+    },
+  ],
   fields: [
-    quickFields('name'),
-    quickFields('srcset', 'array', [quickFields('vimeoSrcset', 'vimeoSrcset')]),
-    quickFields('width', 'number'),
-    quickFields('height', 'number'),
-    quickFields('aspectRatio', 'number'),
-    quickFields('description'),
-    quickFields('pictures', 'array', [quickFields('vimeoPictures', 'vimeoPictures')]),
-    quickFields('link', 'url'),
-    quickFields('duration', 'number'),
+    quickFields('name', 'string', [], [], 'content'),
+    quickFields('link', 'url', [], [], 'content'),
+    quickFields('duration', 'number', [], [], 'content'),
+    quickFields('description', 'text', [], [], 'content'),
+    quickFields('width', 'number', [], [], 'dev-info'),
+    quickFields('height', 'number', [], [], 'dev-info'),
+    quickFields('aspectRatio', 'number', [], [], 'dev-info'),
+    quickFields('srcset', 'array', [quickFields('vimeoSrcset', 'vimeoSrcset')], [], 'dev-info'),
+    quickFields(
+      'pictures',
+      'array',
+      [quickFields('vimeoPictures', 'vimeoPictures')],
+      [],
+      'dev-info',
+    ),
   ],
   preview: {
     select: {
@@ -35,4 +54,4 @@ export default {
       }
     },
   },
-}
+})

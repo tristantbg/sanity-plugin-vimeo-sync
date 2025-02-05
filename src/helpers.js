@@ -7,13 +7,13 @@ import {nanoid} from 'nanoid'
  * @param {string} type Field type, defaults to 'string'
  * @param {array} arrayOf For 'array' and 'object' type fields, populates the field
  */
-export function quickFields(name, type = 'string', arrayOf = [], preview = []) {
+export function quickFields(name, type = 'string', arrayOf = [], preview = [], group = '') {
   const field = {
     readOnly: true,
-    hidden: !['name', 'link'].includes(name),
     name,
     title: name.charAt(0).toUpperCase() + name.slice(1),
     type,
+    group,
   }
 
   if (arrayOf.length) {

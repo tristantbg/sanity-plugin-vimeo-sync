@@ -1,117 +1,120 @@
-import { useState } from 'react'
-import { MdSync } from 'react-icons/md'
-import { useClient } from 'sanity'
-import { addKeys } from '../helpers'
+import {useState} from 'react'
+import {MdSync} from 'react-icons/md'
+import {useClient} from 'sanity'
+import {addKeys} from '../helpers'
 
 export const VimeoSyncView = ({accessToken, folderId}) => {
   const [count, setCount] = useState(false)
   const [countPages, setCountPages] = useState(false)
   const [doingPage, setDoingPage] = useState(false)
+  const [currentVideo, setCurrentVideo] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   const client = useClient({apiVersion: '2023-05-03'})
-  const videos = []
   const vimeoAccessToken = accessToken || process.env.SANITY_STUDIO_VIMEO_ACCESS_TOKEN
-  const vimeoFolderId = folderId ||  process.env.SANITY_STUDIO_VIMEO_FOLDER_ID
+  const vimeoFolderId = folderId || process.env.SANITY_STUDIO_VIMEO_FOLDER_ID
   const vimeoFetchUrlParams =
     '?fields=uri,modified_time,created_time,name,description,link,pictures,files,width,height,duration&per_page=100'
   const vimeoFetchUrl = vimeoFolderId
     ? `https://api.vimeo.com/me/projects/${vimeoFolderId}/videos${vimeoFetchUrlParams}`
     : `https://api.vimeo.com/me/videos${vimeoFetchUrlParams}`
 
-  function importVimeo(url) {
+  async function importVimeo(url) {
     let nextPage
-    let canFetchFiles
 
-    fetch(`https://api.vimeo.com${url}`, {
-      headers: {
-        Authorization: `Bearer ${vimeoAccessToken}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((res) => {
-        nextPage = res.paging.next
-        setDoingPage(`Importing Page ${res.page} of ${Math.ceil(res.total / res.per_page)}…`)
-        const transaction = client.transaction()
-
-        res.data.forEach((video) => {
-          if (video.files) {
-            const videoObject = {
-              _id: `vimeo-${video.uri.split('/').pop()}`,
-              _type: 'vimeo',
-              aspectRatio: video.width / video.height,
-              description: video.description || '',
-              duration: video.duration,
-              height: video.height,
-              link: video.link,
-              name: video.name,
-              pictures: addKeys(video.pictures.sizes, 'link'),
-              srcset: addKeys(video.files, 'md5'),
-              width: video.width,
-            }
-            transaction.createOrReplace(videoObject)
-            videos.push(videoObject)
-          } else {
-            canFetchFiles = false
-            setDoingPage(
-              `This token doesn’t have the "files" scope or this account is not a PRO account`,
-            )
-            console.warn(
-              `This token doesn’t have the "files" scope or this account is not a PRO account`,
-            )
-          }
-        })
-
-        if (canFetchFiles !== false) {
-          return transaction
-            .commit()
-            .then((response) =>
-              nextPage
-                ? importVimeo(nextPage)
-                : (setDoingPage(`Finished`), deleteIncompatibleVimeoDocuments(videos)),
-            )
-            .catch((error) => {
-              console.error('Update failed: ', error.message)
-            })
-        }
+    try {
+      const res = await fetch(`https://api.vimeo.com${url}`, {
+        headers: {
+          Authorization: `Bearer ${vimeoAccessToken}`,
+        },
       })
+      const apiResponse = await res.json()
+      nextPage = apiResponse.paging.next
+      setDoingPage(
+        `Importing Page ${apiResponse.page} of ${Math.ceil(apiResponse.total / apiResponse.per_page)}…`,
+      )
+      const transaction = client.transaction()
+      const videos = apiResponse.data
+
+      for (let [index, video] of videos?.entries?.()) {
+        setCurrentVideo(index + 1)
+        if (video.files) {
+          const videoObject = {
+            _id: `vimeo-${video.uri.split('/').pop()}`,
+            _type: 'vimeo',
+            aspectRatio: video.width / video.height,
+            description: video.description || '',
+            duration: video.duration,
+            height: video.height,
+            link: video.link,
+            name: video.name,
+            pictures: addKeys(video.pictures.sizes, 'link'),
+            srcset: addKeys(video.files, 'md5'),
+            width: video.width,
+          }
+          // await generateVideoAnimatedThumbnails(video)
+          // @todo: generate animated thumbnails inside the schema
+          transaction.createOrReplace(videoObject)
+        } else {
+          setDoingPage(
+            `This token doesn’t have the "files" scope or this account is not a PRO account`,
+          )
+          throw new Error(
+            'This token doesn’t have the "files" scope or this account is not a PRO account',
+          )
+        }
+      }
+
+      await transaction.commit()
+      if (nextPage) {
+        await importVimeo(nextPage)
+      } else {
+        setDoingPage(`Finished`)
+        await deleteIncompatibleVimeoDocuments(videos)
+      }
+    } catch (error) {
+      console.error('Update failed: ', error.message)
+    }
   }
 
-  function deleteIncompatibleVimeoDocuments(videos) {
+  async function deleteIncompatibleVimeoDocuments(videos) {
     const valid_ids = videos.map((v) => v._id)
     const query = '*[_type == "vimeo"] {_id}'
 
-    client.fetch(query).then((documents) => {
+    try {
+      const documents = await client.fetch(query)
       let transaction = client.transaction()
       documents.forEach((document) => {
         if (!valid_ids.includes(document._id)) {
           transaction.delete(document._id)
         }
       })
-      transaction.commit().catch((error) => {
-        console.error('Sanity error:', error)
-        // return {
-        //     statusCode: 500,
-        //     body: JSON.stringify({
-        //         error: 'An internal server error has occurred',
-        //     })
-        // };
-      })
-    })
+      await transaction.commit()
+    } catch (error) {
+      console.error('Sanity error:', error)
+    }
   }
 
-  function fetchVimeo() {
-    fetch(vimeoFetchUrl, {
-      headers: {
-        Authorization: `Bearer ${vimeoAccessToken}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((res) => {
-        setCount(res.total)
-        setCountPages(Math.ceil(res.total / res.per_page))
-
-        importVimeo(res.paging.first, 'first')
+  async function fetchVimeo() {
+    setIsLoading(true)
+    try {
+      const res = await fetch(vimeoFetchUrl, {
+        headers: {
+          Authorization: `Bearer ${vimeoAccessToken}`,
+        },
       })
+      const data = await res.json()
+      setCount(data.total)
+      setCountPages(Math.ceil(data.total / data.per_page))
+
+      await importVimeo(data.paging.first, 'first')
+      setIsLoading(false)
+      setCurrentVideo(0)
+    } catch (error) {
+      setIsLoading(false)
+      setCurrentVideo(0)
+      console.error('Fetch Vimeo failed: ', error.message)
+    }
   }
 
   return (
@@ -135,6 +138,17 @@ export const VimeoSyncView = ({accessToken, folderId}) => {
                 Found {countPages} pages with {count} total Videos
               </strong>
             </p>
+          )}
+
+          {isLoading && (
+            <div>
+              <h3>Loading...</h3>
+              {count && currentVideo ? (
+                <p>
+                  processing {currentVideo} of {count}
+                </p>
+              ) : null}
+            </div>
           )}
 
           {doingPage && doingPage === 'Finished' && <p>{doingPage}</p>}
