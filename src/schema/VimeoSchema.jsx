@@ -1,7 +1,7 @@
 import {MdVideocam} from 'react-icons/md'
 import {defineType, isDev} from 'sanity'
 import {quickFields} from '../helpers'
-// import AnimatedThumbnailsField from './AnimatedThumbnailsField'
+import AnimatedThumbnailsField from './AnimatedThumbnailsField'
 
 export default defineType({
   name: 'vimeo',
@@ -25,8 +25,10 @@ export default defineType({
   fields: [
     quickFields('name', 'string', [], [], 'content'),
     quickFields('link', 'url', [], [], 'content'),
-    quickFields('duration', 'number', [], [], 'content'),
-    quickFields('description', 'text', [], [], 'content'),
+    AnimatedThumbnailsField,
+    quickFields('duration', 'number', [], [], 'dev-info'),
+    quickFields('description', 'text', [], [], 'dev-info'),
+    quickFields('uri', 'string', [], [], 'dev-info'),
     quickFields('width', 'number', [], [], 'dev-info'),
     quickFields('height', 'number', [], [], 'dev-info'),
     quickFields('aspectRatio', 'number', [], [], 'dev-info'),
@@ -38,7 +40,6 @@ export default defineType({
       [],
       'dev-info',
     ),
-    // AnimatedThumbnailsField,
   ],
   preview: {
     select: {

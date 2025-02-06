@@ -1,5 +1,14 @@
 import {nanoid} from 'nanoid'
 
+// config.js
+let pluginConfig = {}
+
+export const setPluginConfig = (config) => {
+  pluginConfig = config
+}
+
+export const getPluginConfig = () => pluginConfig
+
 /**
  * Shorthand helper for writing Sanity fields
  *

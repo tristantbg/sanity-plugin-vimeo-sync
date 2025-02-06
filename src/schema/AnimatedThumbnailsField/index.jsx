@@ -1,5 +1,6 @@
 import {defineField} from 'sanity'
 import {MediaTipInput} from './Input'
+import {CustomStringField} from './customField'
 
 export default defineField({
   type: 'object',
@@ -8,7 +9,9 @@ export default defineField({
   description: 'Animated thumbnails for videos, if you would like to generate them',
   components: {
     input: MediaTipInput,
+    field: CustomStringField,
   },
+  group: 'content',
   // Even though we are making a custom input,
   // it is necessary to define the fields of our object
   fields: [

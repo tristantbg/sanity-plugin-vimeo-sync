@@ -4,6 +4,7 @@ import VimeoObjectPictures from './schema/VimeoObjectPictures'
 import VimeoObjectSrcset from './schema/VimeoObjectSrcset'
 import VimeoSchema from './schema/VimeoSchema'
 
+import {setPluginConfig} from './helpers'
 import {VimeoSyncView} from './tool/VimeoSync'
 /**
  * Usage in `sanity.config.ts` (or .js)
@@ -19,6 +20,8 @@ import {VimeoSyncView} from './tool/VimeoSync'
  * ```
  */
 export const vimeoSync = definePlugin((config = {}) => {
+  setPluginConfig(config)
+
   return {
     name: 'sanity-plugin-vimeo-sync',
 

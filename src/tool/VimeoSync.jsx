@@ -7,14 +7,13 @@ import {useClient} from 'sanity'
 import {addKeys} from '../helpers'
 
 // @todo add status ( error, finished, last sync, etc )
-
-export const VimeoSyncView = ({accessToken, folderId}) => {
-  const [count, setCount] = useState(false)
-  const [countPages, setCountPages] = useState(false)
-  const [doingMessage, setDoingMessage] = useState(false)
-  const [currentVideo, setCurrentVideo] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+export const VimeoSyncView = (options) => {
+  const {accessToken, folderId} = options
+  const [count, setCount] = useState(0)
+  const [countPages, setCountPages] = useState(0)
+  const [currentVideo, setCurrentVideo] = useState(0)
   const [showAccessToken, setShowAccessToken] = useState(false)
+  const [status, setStatus] = useState({type: 'idle'})
 
   const client = useClient({apiVersion: '2023-05-03'})
   const vimeoAccessToken = accessToken || process.env.SANITY_STUDIO_VIMEO_ACCESS_TOKEN
@@ -26,9 +25,10 @@ export const VimeoSyncView = ({accessToken, folderId}) => {
     : `https://api.vimeo.com/me/videos${vimeoFetchUrlParams}`
 
   async function importVimeo(url) {
-    let currentPage
     let nextPage
     let perPage
+    let page
+
     const videosEntry = []
 
     try {
@@ -39,30 +39,29 @@ export const VimeoSyncView = ({accessToken, folderId}) => {
       })
       const apiResponse = await res.json()
       nextPage = apiResponse.paging.next
-      currentPage = apiResponse.page
+      page = apiResponse.page
+
       perPage = apiResponse.per_page
 
-      setDoingMessage(
-        `Importing Page ${apiResponse.page} of ${Math.ceil(apiResponse.total / apiResponse.per_page)}…`,
-      )
       const transaction = client.transaction()
       const videos = apiResponse.data
 
       for (let [index, video] of videos?.entries?.()) {
         // every page can have at least 100 results
-        setCurrentVideo(index + 1 + (currentPage - 1) * perPage)
+        setCurrentVideo(index + 1 + (page - 1) * perPage)
         if (video.files) {
           const videoObject = {
             _id: `vimeo-${video.uri.split('/').pop()}`,
             _type: 'vimeo',
             aspectRatio: video.width / video.height,
+            uri: video.uri,
             description: video.description || '',
             duration: video.duration,
             height: video.height,
             link: video.link,
             name: video.name,
-            pictures: addKeys(video.pictures.sizes, 'link'),
-            srcset: addKeys(video.files, 'md5'),
+            pictures: addKeys(video.pictures?.sizes || [], 'link'),
+            srcset: addKeys(video.files || [], 'md5'),
             width: video.width,
           }
           // await generateVideoAnimatedThumbnails(video)
@@ -71,9 +70,6 @@ export const VimeoSyncView = ({accessToken, folderId}) => {
           videosEntry.push(videoObject)
           await new Promise((resolve) => setTimeout(resolve, 30))
         } else {
-          setDoingMessage(
-            `This token doesn’t have the "files" scope or this account is not a PRO account`,
-          )
           throw new Error(
             'This token doesn’t have the "files" scope or this account is not a PRO account',
           )
@@ -84,11 +80,19 @@ export const VimeoSyncView = ({accessToken, folderId}) => {
       if (nextPage) {
         await importVimeo(nextPage)
       } else {
-        setDoingMessage(`Finished`)
         await deleteIncompatibleVimeoDocuments(videosEntry)
+        setStatus({
+          type: 'finished',
+          message: `Finished syncing ${videosEntry.length} videos at ${new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`,
+        })
       }
     } catch (error) {
       console.error('Update failed: ', error.message)
+
+      setStatus({
+        type: 'error',
+        message: error.message,
+      })
     }
   }
 
@@ -110,7 +114,7 @@ export const VimeoSyncView = ({accessToken, folderId}) => {
   }
 
   async function fetchVimeo() {
-    setIsLoading(true)
+    setStatus({type: 'loading'})
     try {
       const res = await fetch(vimeoFetchUrl, {
         headers: {
@@ -120,20 +124,17 @@ export const VimeoSyncView = ({accessToken, folderId}) => {
       const data = await res.json()
       setCount(data.total)
       setCountPages(Math.ceil(data.total / data.per_page))
-
-      await importVimeo(data.paging.first, 'first')
-      setIsLoading(false)
-      setCurrentVideo(0)
+      await importVimeo(data.paging.first)
     } catch (error) {
-      setIsLoading(false)
-      setCurrentVideo(0)
       console.error('Fetch Vimeo failed: ', error.message)
+      setStatus({type: 'error', message: error.message})
+      setCurrentVideo(0)
     }
   }
 
   return (
     <Card
-      tone={!vimeoAccessToken ? 'critical' : 'default'}
+      tone={!vimeoAccessToken || status.type === 'error' ? 'critical' : 'default'}
       height={'stretch'}
       display={'grid'}
       style={{height: '100%', gridTemplateRows: '1fr auto'}}
@@ -189,8 +190,8 @@ export const VimeoSyncView = ({accessToken, folderId}) => {
             </Flex>
           )}
 
-          <Box>
-            {!isLoading ? (
+          <Flex gap={3}>
+            {status.type !== 'loading' ? (
               <Button
                 icon={MdSync}
                 mode="ghost"
@@ -208,20 +209,27 @@ export const VimeoSyncView = ({accessToken, folderId}) => {
                 </Flex>
               </Card>
             )}
-          </Box>
+
+            {(status.type === 'finished' || status.type === 'error') && (
+              <Card
+                padding={3}
+                border={true}
+                tone={status.type === 'error' ? 'critical' : 'positive'}
+              >
+                {status.type === 'error' && <Text size={1}>Error: {status.message}</Text>}
+                {status.type === 'finished' && <Text size={1}>{status.message}</Text>}
+              </Card>
+            )}
+          </Flex>
         </Flex>
 
-        {isLoading && count && currentVideo && (
+        {status.type === 'loading' && count && currentVideo ? (
           <Card paddingX={3}>
             <Box>
               <Flex direction={'column'} gap={3}>
+                {countPages && <Text size={2}>{count} videos found!</Text>}
                 <progress value={currentVideo} max={count} />
                 <Flex direction={'column'} gap={1}>
-                  {countPages && (
-                    <Text size={1}>
-                      Found {countPages} pages with {count} total Videos
-                    </Text>
-                  )}
                   {count && currentVideo && (
                     <Text size={1}>
                       Processing {currentVideo} of {count}
@@ -231,7 +239,7 @@ export const VimeoSyncView = ({accessToken, folderId}) => {
               </Flex>
             </Box>
           </Card>
-        )}
+        ) : null}
       </Box>
 
       <Card as="footer" padding={3} borderTop>
