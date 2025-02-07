@@ -1,10 +1,11 @@
-import { MdSync } from 'react-icons/md'
-import { definePlugin } from 'sanity'
+import {MdSync} from 'react-icons/md'
+import {definePlugin} from 'sanity'
 import VimeoObjectPictures from './schema/VimeoObjectPictures'
 import VimeoObjectSrcset from './schema/VimeoObjectSrcset'
 import VimeoSchema from './schema/VimeoSchema'
 
-import { VimeoSyncView } from './tool/VimeoSync'
+import {VimeoSyncView} from './tool/VimeoSync'
+
 /**
  * Usage in `sanity.config.ts` (or .js)
  *
