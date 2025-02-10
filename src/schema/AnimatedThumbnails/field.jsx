@@ -1,9 +1,9 @@
 import {Card, Text} from '@sanity/ui'
 
-export function CustomStringField(props) {
+export function field(props) {
   const {children, title, description, value = ''} = props
   return (
-    <Card padding={2} tone={value?.length > 15 ? 'caution' : 'positive'} border>
+    <Card padding={2}>
       <Card paddingY={2} tone="inherit">
         <Text size={1} weight="semibold">
           {title}

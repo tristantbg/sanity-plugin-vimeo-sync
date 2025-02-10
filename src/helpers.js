@@ -16,10 +16,19 @@ export const getPluginConfig = () => pluginConfig
  * @param {string} type Field type, defaults to 'string'
  * @param {array} arrayOf For 'array' and 'object' type fields, populates the field
  */
-export function quickFields(name, type = 'string', arrayOf = [], preview = [], group = '') {
+export function quickFields(
+  name,
+  type = 'string',
+  arrayOf = [],
+  preview = [],
+  group = '',
+  description,
+  readOnly = true,
+) {
   const field = {
-    readOnly: true,
+    readOnly,
     name,
+    description,
     title: name.charAt(0).toUpperCase() + name.slice(1),
     type,
     group,

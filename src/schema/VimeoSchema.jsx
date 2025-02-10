@@ -1,7 +1,7 @@
 import {MdVideocam} from 'react-icons/md'
 import {defineType, isDev} from 'sanity'
 import {quickFields} from '../helpers'
-import AnimatedThumbnailsField from './AnimatedThumbnailsField'
+import AnimatedThumbnailsField from './AnimatedThumbnails'
 
 export default defineType({
   name: 'vimeo',
