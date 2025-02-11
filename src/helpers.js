@@ -1,5 +1,14 @@
 import {nanoid} from 'nanoid'
 
+// config.js
+let pluginConfig = {}
+
+export const setPluginConfig = (config) => {
+  pluginConfig = config
+}
+
+export const getPluginConfig = () => pluginConfig
+
 /**
  * Shorthand helper for writing Sanity fields
  *
@@ -7,13 +16,22 @@ import {nanoid} from 'nanoid'
  * @param {string} type Field type, defaults to 'string'
  * @param {array} arrayOf For 'array' and 'object' type fields, populates the field
  */
-export function quickFields(name, type = 'string', arrayOf = [], preview = []) {
+export function quickFields(
+  name,
+  type = 'string',
+  arrayOf = [],
+  preview = [],
+  group = '',
+  description,
+  readOnly = true,
+) {
   const field = {
-    readOnly: true,
-    hidden: !['name', 'link'].includes(name),
+    readOnly,
     name,
+    description,
     title: name.charAt(0).toUpperCase() + name.slice(1),
     type,
+    group,
   }
 
   if (arrayOf.length) {

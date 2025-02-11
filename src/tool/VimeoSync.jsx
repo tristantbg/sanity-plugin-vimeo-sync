@@ -1,16 +1,21 @@
+import {InfoOutlineIcon} from '@sanity/icons'
+import {Box, Button, Card, Flex, Heading, Spinner, Text, Tooltip} from '@sanity/ui'
 import {useState} from 'react'
+import {FaVimeoV} from 'react-icons/fa'
 import {MdSync} from 'react-icons/md'
 import {useClient} from 'sanity'
 import {addKeys} from '../helpers'
-import GlobalStyle from './GlobalStyle'
 
-export const VimeoSyncView = ({accessToken, folderId}) => {
-  const [count, setCount] = useState(false)
-  const [countPages, setCountPages] = useState(false)
-  const [doingPage, setDoingPage] = useState(false)
+// @todo add status ( error, finished, last sync, etc )
+export const VimeoSyncView = (options) => {
+  const {accessToken, folderId} = options
+  const [count, setCount] = useState(0)
+  const [countPages, setCountPages] = useState(0)
+  const [currentVideo, setCurrentVideo] = useState(0)
+  const [showAccessToken, setShowAccessToken] = useState(false)
+  const [status, setStatus] = useState({type: 'idle'})
 
   const client = useClient({apiVersion: '2023-05-03'})
-  const videos = []
   const vimeoAccessToken = accessToken || process.env.SANITY_STUDIO_VIMEO_ACCESS_TOKEN
   const vimeoFolderId = folderId || process.env.SANITY_STUDIO_VIMEO_FOLDER_ID
   const vimeoFetchUrlParams =
@@ -19,131 +24,256 @@ export const VimeoSyncView = ({accessToken, folderId}) => {
     ? `https://api.vimeo.com/me/projects/${vimeoFolderId}/videos${vimeoFetchUrlParams}`
     : `https://api.vimeo.com/me/videos${vimeoFetchUrlParams}`
 
-  function importVimeo(url) {
+  async function importVimeo(url) {
     let nextPage
-    let canFetchFiles
+    let perPage
+    let page
 
-    fetch(`https://api.vimeo.com${url}`, {
-      headers: {
-        Authorization: `Bearer ${vimeoAccessToken}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((res) => {
-        nextPage = res.paging.next
-        setDoingPage(`Importing Page ${res.page} of ${Math.ceil(res.total / res.per_page)}…`)
-        const transaction = client.transaction()
+    const videosEntry = []
 
-        res.data.forEach((video) => {
-          if (video.files) {
-            const videoObject = {
-              _id: `vimeo-${video.uri.split('/').pop()}`,
-              _type: 'vimeo',
-              aspectRatio: video.width / video.height,
-              description: video.description || '',
-              duration: video.duration,
-              height: video.height,
-              link: video.link,
-              name: video.name,
-              pictures: addKeys(video.pictures.sizes, 'link'),
-              srcset: addKeys(video.files, 'md5'),
-              width: video.width,
-            }
-            transaction.createOrReplace(videoObject)
-            videos.push(videoObject)
-          } else {
-            canFetchFiles = false
-            setDoingPage(
-              `This token doesn’t have the "files" scope or this account is not a PRO account`,
-            )
-            console.warn(
-              `This token doesn’t have the "files" scope or this account is not a PRO account`,
-            )
-          }
-        })
-
-        if (canFetchFiles !== false) {
-          return transaction
-            .commit()
-            .then((response) =>
-              nextPage
-                ? importVimeo(nextPage)
-                : (setDoingPage(`Finished`), deleteIncompatibleVimeoDocuments(videos)),
-            )
-            .catch((error) => {
-              console.error('Update failed: ', error.message)
-            })
-        }
+    try {
+      const res = await fetch(`https://api.vimeo.com${url}`, {
+        headers: {
+          Authorization: `Bearer ${vimeoAccessToken}`,
+        },
       })
+      const apiResponse = await res.json()
+      nextPage = apiResponse.paging.next
+      page = apiResponse.page
+
+      perPage = apiResponse.per_page
+
+      const transaction = client.transaction()
+      const videos = apiResponse.data
+
+      for (let [index, video] of videos?.entries?.()) {
+        // every page can have at least 100 results
+        setCurrentVideo(index + 1 + (page - 1) * perPage)
+        if (video.files) {
+          const videoObject = {
+            _id: `vimeo-${video.uri.split('/').pop()}`,
+            _type: 'vimeo',
+            aspectRatio: video.width / video.height,
+            uri: video.uri,
+            description: video.description || '',
+            duration: video.duration,
+            height: video.height,
+            link: video.link,
+            name: video.name,
+            pictures: addKeys(video.pictures?.sizes || [], 'link'),
+            srcset: addKeys(video.files || [], 'md5'),
+            width: video.width,
+          }
+          // await generateVideoAnimatedThumbnails(video)
+          // @todo: generate animated thumbnails inside the schema
+          transaction.createOrReplace(videoObject)
+          videosEntry.push(videoObject)
+          await new Promise((resolve) => setTimeout(resolve, 30))
+        } else {
+          throw new Error(
+            'This token doesn’t have the "files" scope or this account is not a PRO account',
+          )
+        }
+      }
+
+      await transaction.commit()
+      if (nextPage) {
+        await importVimeo(nextPage)
+      } else {
+        await deleteIncompatibleVimeoDocuments(videosEntry)
+        setStatus({
+          type: 'finished',
+          message: `Finished syncing ${videosEntry.length} videos at ${new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`,
+        })
+      }
+    } catch (error) {
+      console.error('Update failed: ', error.message)
+
+      setStatus({
+        type: 'error',
+        message: error.message,
+      })
+    }
   }
 
-  function deleteIncompatibleVimeoDocuments(videos) {
+  async function deleteIncompatibleVimeoDocuments(videos) {
     const valid_ids = videos.map((v) => v._id)
     const query = '*[_type == "vimeo"] {_id}'
-
-    client.fetch(query).then((documents) => {
+    try {
+      const documents = await client.fetch(query)
       let transaction = client.transaction()
       documents.forEach((document) => {
         if (!valid_ids.includes(document._id)) {
           transaction.delete(document._id)
         }
       })
-      transaction.commit().catch((error) => {
-        console.error('Sanity error:', error)
-        // return {
-        //     statusCode: 500,
-        //     body: JSON.stringify({
-        //         error: 'An internal server error has occurred',
-        //     })
-        // };
-      })
-    })
+      await transaction.commit()
+    } catch (error) {
+      console.error('Sanity error:', error)
+    }
   }
 
-  function fetchVimeo() {
-    fetch(vimeoFetchUrl, {
-      headers: {
-        Authorization: `Bearer ${vimeoAccessToken}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((res) => {
-        setCount(res.total)
-        setCountPages(Math.ceil(res.total / res.per_page))
-
-        importVimeo(res.paging.first, 'first')
+  async function fetchVimeo() {
+    setStatus({type: 'loading'})
+    try {
+      const res = await fetch(vimeoFetchUrl, {
+        headers: {
+          Authorization: `Bearer ${vimeoAccessToken}`,
+        },
       })
+      const data = await res.json()
+      setCount(data.total)
+      setCountPages(Math.ceil(data.total / data.per_page))
+      await importVimeo(data.paging.first)
+    } catch (error) {
+      console.error('Fetch Vimeo failed: ', error.message)
+      setStatus({type: 'error', message: error.message})
+      setCurrentVideo(0)
+    }
   }
 
   return (
-    <div className="container">
-      <GlobalStyle />
-      {vimeoAccessToken && (
-        <div>
-          <button style={{marginBottom: '1rem'}} onClick={() => fetchVimeo()}>
-            <span className="icon">
-              {!doingPage || doingPage === 'Finished' ? (
-                <MdSync />
-              ) : (
-                <MdSync style={{opacity: 0}} />
-              )}
-            </span>
-            <span>{!doingPage || doingPage === 'Finished' ? 'Load Vimeo videos' : doingPage}</span>
-          </button>
+    <Card
+      tone={!vimeoAccessToken || status.type === 'error' ? 'critical' : 'default'}
+      height={'stretch'}
+      display={'grid'}
+      style={{height: '100%', gridTemplateRows: '1fr auto'}}
+    >
+      <Box>
+        <Card borderBottom padding={3} tone={'inherit'}>
+          <Flex justify={'space-between'} align={'center'}>
+            <Flex paddingY={3} align={'center'} gap={3}>
+              <FaVimeoV size={20} />
+              <Heading as="h1" size={0}>
+                Sanity Vimeo Sync
+              </Heading>
+            </Flex>
 
-          {count && countPages && (
-            <p>
-              <strong>
-                Found {countPages} pages with {count} total Videos
-              </strong>
-            </p>
+            {vimeoAccessToken && (
+              <Flex align={'center'} gap={1}>
+                <Button
+                  fontSize={0}
+                  mode="bleed"
+                  onClick={() => setShowAccessToken(!showAccessToken)}
+                  text={showAccessToken ? 'Hide Access Token' : 'Show Access Token'}
+                />
+                <Card
+                  display={'inline-block'}
+                  tone={!showAccessToken ? 'neutral' : 'critical'}
+                  padding={3}
+                  radius={2}
+                >
+                  <Text size={0} weight="bold">
+                    {showAccessToken ? vimeoAccessToken : vimeoAccessToken.replace(/./g, '•')}
+                  </Text>
+                </Card>
+              </Flex>
+            )}
+          </Flex>
+        </Card>
+
+        <Flex direction={'column'} gap={4} paddingX={3} paddingY={4} align={'flex-start'}>
+          {!vimeoAccessToken && (
+            <Flex direction={'column'} gap={4}>
+              <Heading as="h3" size={1}>
+                Error: Missing Vimeo Access Token
+              </Heading>
+              <Text>
+                No access token found. Please check your .env file to ensure the token is correctly
+                set or review your VimeoSync configuration in the Sanity settings. Without a valid
+                token, the tool cannot connect to your Vimeo account to fetch or sync videos.
+              </Text>
+              <Text size={0}>
+                Missing your Vimeo Access Token? You can find it in your Vimeo account settings
+                under
+              </Text>
+            </Flex>
           )}
 
-          {doingPage && doingPage === 'Finished' && <p>{doingPage}</p>}
-        </div>
-      )}
+          <Flex gap={3}>
+            {status.type !== 'loading' ? (
+              <Button
+                icon={MdSync}
+                mode="ghost"
+                text={'Load Vimeo videos'}
+                onClick={() => fetchVimeo()}
+                disabled={!vimeoAccessToken}
+              />
+            ) : (
+              <Card tone="neutral" padding={3}>
+                <Flex align={'center'} gap={3}>
+                  <Spinner />
+                  <Text size={1} weight="medium">
+                    Loading...
+                  </Text>
+                </Flex>
+              </Card>
+            )}
 
-      {!vimeoAccessToken && <p>No Access Token found. Please check your .env</p>}
-    </div>
+            {(status.type === 'finished' || status.type === 'error') && (
+              <Card
+                padding={3}
+                border={true}
+                tone={status.type === 'error' ? 'critical' : 'positive'}
+              >
+                {status.type === 'error' && <Text size={1}>Error: {status.message}</Text>}
+                {status.type === 'finished' && <Text size={1}>{status.message}</Text>}
+              </Card>
+            )}
+          </Flex>
+        </Flex>
+
+        {status.type === 'loading' && count && currentVideo ? (
+          <Card paddingX={3}>
+            <Box>
+              <Flex direction={'column'} gap={3}>
+                {countPages && <Text size={2}>{count} videos found!</Text>}
+                <progress value={currentVideo} max={count} />
+                <Flex direction={'column'} gap={1}>
+                  {count && currentVideo && (
+                    <Text size={1}>
+                      Processing {currentVideo} of {count}
+                    </Text>
+                  )}
+                </Flex>
+              </Flex>
+            </Box>
+          </Card>
+        ) : null}
+      </Box>
+
+      <Card as="footer" padding={3} borderTop>
+        <Flex justify={'space-between'} align={'center'}>
+          <Text size={0}>License MIT © Tristan Bagot + Daniele Polacco</Text>
+          <Text>
+            <Tooltip
+              content={
+                <Box padding={1} style={{maxWidth: '300px'}}>
+                  <Flex gap={5} direction={'column'}>
+                    <Text muted size={1}>
+                      This tool seamlessly integrates your Vimeo account with Sanity by fetching all
+                      available videos and importing them into your Sanity project.
+                    </Text>
+                    <Text muted size={1}>
+                      It ensures your content stays up to date by automatically detecting and
+                      removing any videos that have been deleted or are no longer accessible in your
+                      Vimeo account.
+                    </Text>
+                    <Text muted size={1}>
+                      This helps maintain a clean and accurate video library within Sanity without
+                      the need for manual updates.
+                    </Text>
+                  </Flex>
+                </Box>
+              }
+              placement="top"
+              portal
+            >
+              <InfoOutlineIcon />
+            </Tooltip>
+          </Text>
+        </Flex>
+      </Card>
+    </Card>
   )
 }
