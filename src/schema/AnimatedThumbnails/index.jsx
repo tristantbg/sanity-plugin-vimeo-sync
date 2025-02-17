@@ -8,7 +8,7 @@ export default defineField({
   name: 'animatedThumbnails',
   title: 'Animated Thumbnails',
   description:
-    'Animated thumbnails for videos, if you would like to generate them. Please note that the generation process can take a few minutes.',
+    'Each operation may take up to 5 minutes. Please keep the window open and avoid switching projects/entry during this process.',
   components: {
     input,
     field,
