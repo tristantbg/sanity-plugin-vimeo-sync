@@ -1,13 +1,31 @@
 import {InfoOutlineIcon} from '@sanity/icons'
+import {useSecrets} from '@sanity/studio-secrets'
 import {Box, Button, Card, Flex, Heading, Spinner, Text, Tooltip} from '@sanity/ui'
-import {useState} from 'react'
+import {useEffect, useState} from 'react'
 import {FaVimeoV} from 'react-icons/fa'
 import {MdSync} from 'react-icons/md'
 import {useClient} from 'sanity'
 import {addKeys} from '../helpers'
 
-// @todo add status ( error, finished, last sync, etc )
+const namespace = 'vs-plgugin'
+
+const pluginConfigKeys = [
+  {
+    key: 'apiKey',
+    title: 'Your secret API key',
+  },
+]
+
 export const VimeoSyncView = (options) => {
+  const {secrets} = useSecrets(namespace)
+  const [showSettings, setShowSettings] = useState(false)
+
+  useEffect(() => {
+    if (!secrets) {
+      setShowSettings(true)
+    }
+  }, [secrets])
+
   const {accessToken, folderId} = options
   const [count, setCount] = useState(0)
   const [countPages, setCountPages] = useState(0)
@@ -149,7 +167,7 @@ export const VimeoSyncView = (options) => {
               </Heading>
             </Flex>
 
-            {vimeoAccessToken && (
+            {/* {vimeoAccessToken && (
               <Flex align={'center'} gap={1}>
                 <Button
                   fontSize={0}
@@ -168,7 +186,18 @@ export const VimeoSyncView = (options) => {
                   </Text>
                 </Card>
               </Flex>
-            )}
+            )} */}
+
+            {/* {!showSettings ? null : (
+              <SettingsView
+                title={'Alert'}
+                namespace={namespace}
+                keys={pluginConfigKeys}
+                onClose={() => {
+                  setShowSettings(false)
+                }}
+              />
+            )} */}
           </Flex>
         </Card>
 

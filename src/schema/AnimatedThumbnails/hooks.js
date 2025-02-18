@@ -6,10 +6,13 @@ import {
   getExistingVideoThumbnails,
 } from './utils'
 
-export const useAnimatedThumbs = (uri) => {
-  const [status, setStatus] = useState({type: 'idle', message: undefined})
+export const useAnimatedThumbs = (uri, field) => {
+  const hasThumbnails = field?.thumbnails?.length && field?.thumbnails?.[0]?.status === 'completed'
+  const [status, setStatus] = useState(
+    hasThumbnails ? {type: 'already-generated'} : {type: 'idle', message: undefined},
+  )
   const [attempt, setAttempt] = useState(0)
-  const [items, setItems] = useState([])
+  const [items, setItems] = useState(hasThumbnails ? field.thumbnails : [])
   const checkStatus = async (opts) => {
     const defaultOpts = {
       startTime: Date.now(),
@@ -20,7 +23,6 @@ export const useAnimatedThumbs = (uri) => {
 
     const options = {...defaultOpts, ...opts}
     const {startTime, loop, timeout, pollInterval} = options
-    console.log('Check status')
 
     if (timeout < pollInterval) {
       throw new Error('Poll interval is greater than timeout')
@@ -85,15 +87,15 @@ export const useAnimatedThumbs = (uri) => {
   }
 
   const deleteThumbs = async () => {
-    setStatus(ps('loading', null, 'delete'))
-    for (const item of items) {
-      const res = await deleteExistingVideoThumbnails(item)
-      if (res.error) {
-        setStatus({type: 'error', message: res.error})
-        return
+    try {
+      setStatus(ps('loading', null, 'delete'))
+      for (const item of items) {
+        await deleteExistingVideoThumbnails(item)
       }
+      setStatus(ps('sucess', null, 'delete'))
+    } catch (e) {
+      setStatus({type: 'error', message: e.message})
     }
-    setStatus(ps('success-delete'))
   }
 
   return {status, attempt, items, generateThumbs, deleteThumbs}

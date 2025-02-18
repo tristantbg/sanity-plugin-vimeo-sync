@@ -18,6 +18,9 @@ export const getExistingVideoThumbnails = async (uri) => {
   })
 
   const apiResponse = await res.json()
+  if (apiResponse.error) {
+    throw new Error(apiResponse.error)
+  }
 
   if (apiResponse.total > 0) {
     return apiResponse.data
@@ -39,7 +42,13 @@ export const deleteExistingVideoThumbnails = async (thumb) => {
       },
     })
 
-    return await res.json()
+    if (res.ok && res.status === 204) {
+      return {success: true}
+    } else {
+      throw new Error('Error deleting animated thumbnails: ' + res.statusText)
+    }
+  } else {
+    throw new Error('No thumbset URI provided')
   }
 }
 

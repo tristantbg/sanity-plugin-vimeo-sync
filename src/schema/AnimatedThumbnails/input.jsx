@@ -18,7 +18,9 @@ export function input(props) {
   const videoUri = useFormValue(['uri'])
   const documentId = useFormValue(['_id'])
   const client = useClient({apiVersion: '1'})
-  const {status, items, generateThumbs, deleteThumbs} = useAnimatedThumbs(videoUri)
+  const thumbnails = useFormValue(['animatedThumbnails'])
+
+  const {status, items, generateThumbs, deleteThumbs} = useAnimatedThumbs(videoUri, thumbnails)
 
   const startTimeMember = members.find(
     (member) => member.kind === 'field' && member.name === 'startTime',
@@ -28,17 +30,31 @@ export function input(props) {
   )
 
   const handleGenerate = async () => {
+    onChange([set([], ['thumbnails'])])
     const generatedItems = await generateThumbs()
     const itemsWithKeys = generatedItems.map((item) => {
       const sizesWithKey = item.sizes.map((size) => ({...size, _key: `size-${size.width}`}))
       return {...item, sizes: sizesWithKey, _key: `thumb-${item.clip_uri}`}
     })
-    onChange([set(itemsWithKeys, ['thumbnails']), set(2, ['duration'])])
+
+    const duration = itemsWithKeys[0]?.sizes[0]?.duration
+    const startTime = itemsWithKeys[0]?.sizes[0]?.startTime
+    onChange([
+      set(itemsWithKeys, ['thumbnails']),
+      set(duration, ['duration']),
+      set(startTime, ['startTime']),
+    ])
+  }
+
+  const handleDelete = async () => {
+    await deleteThumbs()
+    onChange([set([], ['thumbnails'])])
   }
 
   const renderButton = () => {
     switch (status.type) {
       case 'loading':
+      case 'loading-delete':
         return (
           <Card tone="neutral" padding={3}>
             <Flex align={'center'} gap={3}>
@@ -49,13 +65,14 @@ export function input(props) {
             </Flex>
           </Card>
         )
+      case 'success':
       case 'already-generated':
         return (
           <Button
             icon={GenerateIcon}
             tone="critical"
             text="Delete existing Thumbnails"
-            onClick={deleteThumbs}
+            onClick={handleDelete}
             disabled={status.type === 'loading'}
           />
         )
