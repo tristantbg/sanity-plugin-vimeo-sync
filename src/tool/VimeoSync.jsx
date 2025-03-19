@@ -6,6 +6,7 @@ import {FaVimeoV} from 'react-icons/fa'
 import {MdSync} from 'react-icons/md'
 import {useClient} from 'sanity'
 import {addKeys} from '../helpers'
+import {getExistingVideoThumbnails} from '../schema/AnimatedThumbnails/utils'
 
 const namespace = 'vs-plgugin'
 
@@ -19,7 +20,8 @@ const pluginConfigKeys = [
 export const VimeoSyncView = (options) => {
   const {secrets} = useSecrets(namespace)
   const [showSettings, setShowSettings] = useState(false)
-
+  const [inexistent, setInexistent] = useState([])
+  const [videosEntry, setVideosEntry] = useState([])
   useEffect(() => {
     if (!secrets) {
       setShowSettings(true)
@@ -46,8 +48,6 @@ export const VimeoSyncView = (options) => {
     let nextPage
     let perPage
     let page
-
-    const videosEntry = []
 
     try {
       const res = await fetch(`https://api.vimeo.com${url}`, {
@@ -82,11 +82,27 @@ export const VimeoSyncView = (options) => {
             srcset: addKeys(video.files || [], 'md5'),
             width: video.width,
           }
-          // await generateVideoAnimatedThumbnails(video)
-          // @todo: generate animated thumbnails inside the schema
+          const existingThumbnails = await getExistingVideoThumbnails(video.uri)
+          if (existingThumbnails?.length) {
+            const itemsWithKeys = existingThumbnails.map((item) => {
+              const sizesWithKey = item.sizes.map((size) => ({...size, _key: `size-${size.width}`}))
+              return {...item, sizes: sizesWithKey, _key: `thumb-${item.clip_uri}`}
+            })
+
+            const duration = itemsWithKeys[0]?.sizes[0]?.duration
+            const startTime = itemsWithKeys[0]?.sizes[0]?.startTime
+
+            videoObject.animatedThumbnails = {
+              thumbnails: itemsWithKeys,
+              startTime,
+              duration,
+            }
+          }
+
           transaction.createOrReplace(videoObject)
           videosEntry.push(videoObject)
-          await new Promise((resolve) => setTimeout(resolve, 30))
+          // @tristan: 300ms delay to prevent 429 error
+          await new Promise((resolve) => setTimeout(resolve, 300))
         } else {
           throw new Error(
             'This token doesn’t have the "files" scope or this account is not a PRO account',
@@ -115,17 +131,24 @@ export const VimeoSyncView = (options) => {
   }
 
   async function deleteIncompatibleVimeoDocuments(videos) {
+    setInexistent([])
+    const inexistent = []
     const valid_ids = videos.map((v) => v._id)
     const query = '*[_type == "vimeo"] {_id}'
     try {
       const documents = await client.fetch(query)
       let transaction = client.transaction()
-      documents.forEach((document) => {
+      documents.forEach(async (document) => {
         if (!valid_ids.includes(document._id)) {
           transaction.delete(document._id)
+          try {
+            await transaction.commit()
+          } catch (e) {
+            inexistent.push(document._id)
+          }
         }
       })
-      await transaction.commit()
+      setInexistent(inexistent)
     } catch (error) {
       console.error('Sanity error:', error)
     }
@@ -133,6 +156,7 @@ export const VimeoSyncView = (options) => {
 
   async function fetchVimeo() {
     setStatus({type: 'loading'})
+    setVideosEntry([])
     try {
       const res = await fetch(vimeoFetchUrl, {
         headers: {
@@ -155,7 +179,7 @@ export const VimeoSyncView = (options) => {
       tone={!vimeoAccessToken || status.type === 'error' ? 'critical' : 'default'}
       height={'stretch'}
       display={'grid'}
-      style={{height: '100%', gridTemplateRows: '1fr auto'}}
+      style={{minHeight: '100%', gridTemplateRows: '1fr auto'}}
     >
       <Box>
         <Card borderBottom padding={3} tone={'inherit'}>
@@ -250,6 +274,22 @@ export const VimeoSyncView = (options) => {
               </Card>
             )}
           </Flex>
+
+          {inexistent?.length > 0 && (
+            <Card padding={3} border={true} tone={'caution'}>
+              <Flex direction={'column'} gap={3}>
+                <Text size={2}>
+                  Found {inexistent.length} inexisting video{inexistent.length > 1 ? 's' : ''} that
+                  can't be deleted because they are referenced in other documents:
+                </Text>
+                {inexistent.map((id) => (
+                  <Text key={id} size={1}>
+                    {id}
+                  </Text>
+                ))}
+              </Flex>
+            </Card>
+          )}
         </Flex>
 
         {status.type === 'loading' && count && currentVideo ? (
