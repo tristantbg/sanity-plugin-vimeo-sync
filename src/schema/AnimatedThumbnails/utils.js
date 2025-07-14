@@ -52,7 +52,7 @@ export const deleteExistingVideoThumbnails = async (thumb) => {
   }
 }
 
-export const createSetOfAnimatedThumbnails = async (uri, duration) => {
+export const createSetOfAnimatedThumbnails = async (uri, startTime, duration) => {
   const pluginConfig = getPluginConfig()
   const vimeoAccessToken = pluginConfig?.accessToken
 
@@ -64,6 +64,7 @@ export const createSetOfAnimatedThumbnails = async (uri, duration) => {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
+      start_time: startTime,
       duration,
     }),
   })

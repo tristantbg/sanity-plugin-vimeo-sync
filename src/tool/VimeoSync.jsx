@@ -1,12 +1,12 @@
-import {InfoOutlineIcon} from '@sanity/icons'
-import {useSecrets} from '@sanity/studio-secrets'
-import {Box, Button, Card, Flex, Heading, Spinner, Text, Tooltip} from '@sanity/ui'
-import {useEffect, useState} from 'react'
-import {FaVimeoV} from 'react-icons/fa'
-import {MdSync} from 'react-icons/md'
-import {useClient} from 'sanity'
-import {addKeys} from '../helpers'
-import {getExistingVideoThumbnails} from '../schema/AnimatedThumbnails/utils'
+import { InfoOutlineIcon } from '@sanity/icons'
+import { useSecrets } from '@sanity/studio-secrets'
+import { Box, Button, Card, Flex, Heading, Spinner, Text, Tooltip } from '@sanity/ui'
+import { useEffect, useState } from 'react'
+import { FaVimeoV } from 'react-icons/fa'
+import { MdSync } from 'react-icons/md'
+import { useClient } from 'sanity'
+import { addKeys } from '../helpers'
+import { getExistingVideoThumbnails } from '../schema/AnimatedThumbnails/utils'
 
 const namespace = 'vs-plgugin'
 
@@ -101,7 +101,7 @@ export const VimeoSyncView = (options) => {
 
           transaction.createOrReplace(videoObject)
           videosEntry.push(videoObject)
-          // @tristan: 300ms delay to prevent 429 error
+          // 300ms delay to prevent 429 error
           await new Promise((resolve) => setTimeout(resolve, 300))
         } else {
           throw new Error(

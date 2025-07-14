@@ -31,7 +31,14 @@ export function input(props) {
 
   const handleGenerate = async () => {
     onChange([set([], ['thumbnails'])])
-    const generatedItems = await generateThumbs()
+
+    // console.log();
+
+    const generatedItems = await generateThumbs(
+      startTimeMember?.field?.value || 0,
+      durationMember?.field?.value || 6,
+    )
+
     const itemsWithKeys = generatedItems.map((item) => {
       const sizesWithKey = item.sizes.map((size) => ({...size, _key: `size-${size.width}`}))
       return {...item, sizes: sizesWithKey, _key: `thumb-${item.clip_uri}`}
@@ -77,12 +84,16 @@ export function input(props) {
           />
         )
       default:
+        const isInvalid =
+          startTimeMember?.field?.validation?.length > 0 ||
+          durationMember?.field?.validation?.length > 0
+
         return (
           <Button
             icon={GenerateIcon}
             text="Generate animated Thumbnails"
             onClick={handleGenerate}
-            disabled={status.type === 'loading' || status.type === 'error'}
+            disabled={status.type === 'loading' || status.type === 'error' || isInvalid}
           />
         )
     }
