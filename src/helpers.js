@@ -4,10 +4,16 @@ import {nanoid} from 'nanoid'
 let pluginConfig = {}
 
 export const setPluginConfig = (config) => {
+  pluginConfig = {...pluginConfig, ...config}
+}
+
+export const overridePluginConfig = (config) => {
   pluginConfig = config
 }
 
-export const getPluginConfig = () => pluginConfig
+export const getPluginConfig = () => {
+  return pluginConfig
+}
 
 /**
  * Shorthand helper for writing Sanity fields

@@ -1,6 +1,10 @@
 import {GenerateIcon} from '@sanity/icons'
+import {useSecrets} from '@sanity/studio-secrets'
 import {Button, Card, Flex, Grid, Spinner, Text} from '@sanity/ui'
+import {useEffect} from 'react'
 import {MemberField, set, useClient, useFormValue} from 'sanity'
+import {namespace} from '../../constants'
+import {setPluginConfig} from '../../helpers'
 import {useAnimatedThumbs} from './hooks'
 
 export function input(props) {
@@ -14,6 +18,18 @@ export function input(props) {
     renderPreview,
     renderDefault,
   } = props
+
+  const {secrets, loading} = useSecrets(namespace)
+
+  useEffect(() => {
+    if (!secrets?.apiKey && !loading) {
+      console.error('Vimeo access token is not set. Please set it in the Studio Secrets.')
+    } else if (secrets?.apiKey) {
+      setPluginConfig({
+        accessToken: secrets.apiKey,
+      })
+    }
+  }, [secrets, loading])
 
   const videoUri = useFormValue(['uri'])
   const documentId = useFormValue(['_id'])
@@ -31,8 +47,6 @@ export function input(props) {
 
   const handleGenerate = async () => {
     onChange([set([], ['thumbnails'])])
-
-    // console.log();
 
     const generatedItems = await generateThumbs(
       startTimeMember?.field?.value || 0,
@@ -99,6 +113,18 @@ export function input(props) {
     }
   }
 
+  if (loading) {
+    return (
+      <Card padding={3} tone="caution">
+        <Flex align={'center'} gap={3}>
+          <Spinner />
+          <Text size={1} weight="medium">
+            Loading...
+          </Text>
+        </Flex>
+      </Card>
+    )
+  }
   return (
     <>
       <Card>

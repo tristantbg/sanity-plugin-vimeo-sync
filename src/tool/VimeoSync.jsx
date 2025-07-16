@@ -1,42 +1,42 @@
-import { InfoOutlineIcon } from '@sanity/icons'
-import { useSecrets } from '@sanity/studio-secrets'
-import { Box, Button, Card, Flex, Heading, Spinner, Text, Tooltip } from '@sanity/ui'
-import { useEffect, useState } from 'react'
-import { FaVimeoV } from 'react-icons/fa'
-import { MdSync } from 'react-icons/md'
-import { useClient } from 'sanity'
-import { addKeys } from '../helpers'
-import { getExistingVideoThumbnails } from '../schema/AnimatedThumbnails/utils'
-
-const namespace = 'vs-plgugin'
+import {InfoOutlineIcon} from '@sanity/icons'
+import {SettingsView, useSecrets} from '@sanity/studio-secrets'
+import {Box, Button, Card, Flex, Heading, Spinner, Text, Tooltip} from '@sanity/ui'
+import {useEffect, useState} from 'react'
+import {FaVimeoV} from 'react-icons/fa'
+import {MdSync} from 'react-icons/md'
+import {useClient} from 'sanity'
+import {namespace} from '../constants'
+import {addKeys} from '../helpers'
+import {getExistingVideoThumbnails} from '../schema/AnimatedThumbnails/utils'
 
 const pluginConfigKeys = [
   {
     key: 'apiKey',
-    title: 'Your secret API key',
+    title: 'API key',
   },
 ]
 
 export const VimeoSyncView = (options) => {
-  const {secrets} = useSecrets(namespace)
+  const {secrets, loading} = useSecrets(namespace)
+  useEffect(() => {
+    if (!secrets && !loading) {
+      console.warn('No secrets found for Vimeo Sync plugin. Please set up your API key.')
+    }
+  }, [secrets, loading])
+
+  const {apiKey: vimeoAccessToken} = secrets || {}
+
   const [showSettings, setShowSettings] = useState(false)
   const [inexistent, setInexistent] = useState([])
   const [videosEntry, setVideosEntry] = useState([])
-  useEffect(() => {
-    if (!secrets) {
-      setShowSettings(true)
-    }
-  }, [secrets])
 
-  const {accessToken, folderId} = options
+  const {folderId} = options
   const [count, setCount] = useState(0)
   const [countPages, setCountPages] = useState(0)
   const [currentVideo, setCurrentVideo] = useState(0)
-  const [showAccessToken, setShowAccessToken] = useState(false)
   const [status, setStatus] = useState({type: 'idle'})
 
   const client = useClient({apiVersion: '2023-05-03'})
-  const vimeoAccessToken = accessToken || process.env.SANITY_STUDIO_VIMEO_ACCESS_TOKEN
   const vimeoFolderId = folderId || process.env.SANITY_STUDIO_VIMEO_FOLDER_ID
   const vimeoFetchUrlParams =
     '?fields=uri,modified_time,created_time,name,description,link,pictures,files,width,height,duration&per_page=100'
@@ -174,6 +174,18 @@ export const VimeoSyncView = (options) => {
     }
   }
 
+  if (loading) {
+    return (
+      <Card padding={4} tone="default">
+        <Flex align="center" gap={3}>
+          <Spinner />
+          <Text size={2} weight="medium">
+            Loading Vimeo Sync plugin...
+          </Text>
+        </Flex>
+      </Card>
+    )
+  }
   return (
     <Card
       tone={!vimeoAccessToken || status.type === 'error' ? 'critical' : 'default'}
@@ -191,37 +203,25 @@ export const VimeoSyncView = (options) => {
               </Heading>
             </Flex>
 
-            {/* {vimeoAccessToken && (
-              <Flex align={'center'} gap={1}>
-                <Button
-                  fontSize={0}
-                  mode="bleed"
-                  onClick={() => setShowAccessToken(!showAccessToken)}
-                  text={showAccessToken ? 'Hide Access Token' : 'Show Access Token'}
-                />
-                <Card
-                  display={'inline-block'}
-                  tone={!showAccessToken ? 'neutral' : 'critical'}
-                  padding={3}
-                  radius={2}
-                >
-                  <Text size={0} weight="bold">
-                    {showAccessToken ? vimeoAccessToken : vimeoAccessToken.replace(/./g, '•')}
-                  </Text>
-                </Card>
-              </Flex>
-            )} */}
+            <Flex align={'center'} gap={1}>
+              <Button
+                fontSize={0}
+                mode="bleed"
+                onClick={() => setShowSettings(!showSettings)}
+                text={showSettings ? 'Hide Access Token' : 'Show/Edit Access Token'}
+              />
+            </Flex>
 
-            {/* {!showSettings ? null : (
+            {!showSettings ? null : (
               <SettingsView
-                title={'Alert'}
+                title={'Vimeo Sync Settings'}
                 namespace={namespace}
                 keys={pluginConfigKeys}
                 onClose={() => {
                   setShowSettings(false)
                 }}
               />
-            )} */}
+            )}
           </Flex>
         </Card>
 
