@@ -52,7 +52,7 @@ export const useAnimatedThumbs = (uri, field) => {
     }
   }
 
-  const generateThumbs = async () => {
+  const generateThumbs = async (startTime, duration) => {
     setAttempt(0)
     setStatus(ps('loading', attempt))
 
@@ -68,7 +68,7 @@ export const useAnimatedThumbs = (uri, field) => {
         return animatedThumbnails
       }
 
-      await createSetOfAnimatedThumbnails(uri, 6)
+      await createSetOfAnimatedThumbnails(uri, startTime, duration)
       const items = await checkStatus()
       if (items.length) {
         setStatus(ps('success'))

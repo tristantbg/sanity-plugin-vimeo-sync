@@ -1,6 +1,10 @@
 import {GenerateIcon} from '@sanity/icons'
+import {useSecrets} from '@sanity/studio-secrets'
 import {Button, Card, Flex, Grid, Spinner, Text} from '@sanity/ui'
+import {useEffect} from 'react'
 import {MemberField, set, useClient, useFormValue} from 'sanity'
+import {namespace} from '../../constants'
+import {setPluginConfig} from '../../helpers'
 import {useAnimatedThumbs} from './hooks'
 
 export function input(props) {
@@ -14,6 +18,18 @@ export function input(props) {
     renderPreview,
     renderDefault,
   } = props
+
+  const {secrets, loading} = useSecrets(namespace)
+
+  useEffect(() => {
+    if (!secrets?.apiKey && !loading) {
+      console.error('Vimeo access token is not set. Please set it in the Studio Secrets.')
+    } else if (secrets?.apiKey) {
+      setPluginConfig({
+        accessToken: secrets.apiKey,
+      })
+    }
+  }, [secrets, loading])
 
   const videoUri = useFormValue(['uri'])
   const documentId = useFormValue(['_id'])
@@ -31,7 +47,12 @@ export function input(props) {
 
   const handleGenerate = async () => {
     onChange([set([], ['thumbnails'])])
-    const generatedItems = await generateThumbs()
+
+    const generatedItems = await generateThumbs(
+      startTimeMember?.field?.value || 0,
+      durationMember?.field?.value || 6,
+    )
+
     const itemsWithKeys = generatedItems.map((item) => {
       const sizesWithKey = item.sizes.map((size) => ({...size, _key: `size-${size.width}`}))
       return {...item, sizes: sizesWithKey, _key: `thumb-${item.clip_uri}`}
@@ -77,17 +98,33 @@ export function input(props) {
           />
         )
       default:
+        const isInvalid =
+          startTimeMember?.field?.validation?.length > 0 ||
+          durationMember?.field?.validation?.length > 0
+
         return (
           <Button
             icon={GenerateIcon}
             text="Generate animated Thumbnails"
             onClick={handleGenerate}
-            disabled={status.type === 'loading' || status.type === 'error'}
+            disabled={status.type === 'loading' || status.type === 'error' || isInvalid}
           />
         )
     }
   }
 
+  if (loading) {
+    return (
+      <Card padding={3} tone="caution">
+        <Flex align={'center'} gap={3}>
+          <Spinner />
+          <Text size={1} weight="medium">
+            Loading...
+          </Text>
+        </Flex>
+      </Card>
+    )
+  }
   return (
     <>
       <Card>
