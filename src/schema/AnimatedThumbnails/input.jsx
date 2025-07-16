@@ -2,7 +2,7 @@ import {GenerateIcon} from '@sanity/icons'
 import {useSecrets} from '@sanity/studio-secrets'
 import {Button, Card, Flex, Grid, Spinner, Text} from '@sanity/ui'
 import {useEffect} from 'react'
-import {MemberField, set, useClient, useFormValue} from 'sanity'
+import {MemberField, set, useFormValue} from 'sanity'
 import {namespace} from '../../constants'
 import {setPluginConfig} from '../../helpers'
 import {useAnimatedThumbs} from './hooks'
@@ -32,8 +32,6 @@ export function input(props) {
   }, [secrets, loading])
 
   const videoUri = useFormValue(['uri'])
-  const documentId = useFormValue(['_id'])
-  const client = useClient({apiVersion: '1'})
   const thumbnails = useFormValue(['animatedThumbnails'])
 
   const {status, items, generateThumbs, deleteThumbs} = useAnimatedThumbs(videoUri, thumbnails)
@@ -44,6 +42,17 @@ export function input(props) {
   const durationMember = members.find(
     (member) => member.kind === 'field' && member.name === 'duration',
   )
+
+  useEffect(() => {
+    if (items?.length) {
+      // set startTime and duration as the first item's values
+      const firstItem = items[0]
+      if (!firstItem?.sizes?.length) return
+
+      onChange(set(firstItem.sizes[0].start_time, ['startTime']))
+      onChange(set(firstItem.sizes[0].duration, ['duration']))
+    }
+  }, [items])
 
   const handleGenerate = async () => {
     onChange([set([], ['thumbnails'])])
@@ -58,8 +67,8 @@ export function input(props) {
       return {...item, sizes: sizesWithKey, _key: `thumb-${item.clip_uri}`}
     })
 
-    const duration = itemsWithKeys[0]?.sizes[0]?.duration
-    const startTime = itemsWithKeys[0]?.sizes[0]?.startTime
+    const duration = itemsWithKeys[0]?.sizes?.[0]?.duration
+    const startTime = itemsWithKeys[0]?.sizes?.[0]?.start_time
     onChange([
       set(itemsWithKeys, ['thumbnails']),
       set(duration, ['duration']),
