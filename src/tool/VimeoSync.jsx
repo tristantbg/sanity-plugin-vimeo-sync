@@ -6,7 +6,7 @@ import {FaVimeoV} from 'react-icons/fa'
 import {MdSync} from 'react-icons/md'
 import {useClient} from 'sanity'
 import {namespace} from '../constants'
-import {addKeys} from '../helpers'
+import {addKeys, setPluginConfig} from '../helpers'
 import {getExistingVideoThumbnails} from '../schema/AnimatedThumbnails/utils'
 
 const pluginConfigKeys = [
@@ -19,8 +19,12 @@ const pluginConfigKeys = [
 export const VimeoSyncView = (options) => {
   const {secrets, loading} = useSecrets(namespace)
   useEffect(() => {
-    if (!secrets && !loading) {
-      console.warn('No secrets found for Vimeo Sync plugin. Please set up your API key.')
+    if (!secrets?.apiKey && !loading) {
+      console.error('Vimeo access token is not set. Please set it in the Studio Secrets.')
+    } else if (secrets?.apiKey) {
+      setPluginConfig({
+        accessToken: secrets.apiKey,
+      })
     }
   }, [secrets, loading])
 
