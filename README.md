@@ -20,12 +20,13 @@ export default defineConfig({
   //...
   plugins: [
     vimeoSync({
-      accessToken: '',
       folderId: '', // optional
     }),
   ],
 })
 ```
+
+Then set the Vimeo access token with `private create delete video_files public` scopes inside the Sanity plug-in page.
 
 ## License
 
