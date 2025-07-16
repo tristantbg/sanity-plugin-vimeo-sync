@@ -2,7 +2,7 @@ import {GenerateIcon} from '@sanity/icons'
 import {useSecrets} from '@sanity/studio-secrets'
 import {Button, Card, Flex, Grid, Spinner, Text} from '@sanity/ui'
 import {useEffect} from 'react'
-import {MemberField, set, useClient, useFormValue} from 'sanity'
+import {MemberField, set, useFormValue} from 'sanity'
 import {namespace} from '../../constants'
 import {setPluginConfig} from '../../helpers'
 import {useAnimatedThumbs} from './hooks'
@@ -32,8 +32,6 @@ export function input(props) {
   }, [secrets, loading])
 
   const videoUri = useFormValue(['uri'])
-  const documentId = useFormValue(['_id'])
-  const client = useClient({apiVersion: '1'})
   const thumbnails = useFormValue(['animatedThumbnails'])
 
   const {status, items, generateThumbs, deleteThumbs} = useAnimatedThumbs(videoUri, thumbnails)
