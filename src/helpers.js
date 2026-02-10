@@ -3,6 +3,51 @@ import { nanoid } from 'nanoid'
 // config.js
 let pluginConfig = {}
 
+/**
+ * Rate-limit-aware fetch wrapper for the Vimeo API.
+ *
+ * - On 429 (Too Many Requests): reads the `Retry-After` header and waits
+ *   before retrying, up to `maxRetries` attempts.
+ * - On success: reads `X-RateLimit-Remaining` and adds a short cooldown
+ *   only when the remaining quota is running low.
+ *
+ * This replaces fixed delays with adaptive throttling — requests go full
+ * speed until the API signals it is time to slow down.
+ *
+ * @param {string} url  Full Vimeo API URL
+ * @param {RequestInit} options  Standard fetch options
+ * @param {number} [maxRetries=3]  Maximum retry attempts on 429
+ * @returns {Promise<Response>}
+ */
+export async function vimeoFetch(url, options = {}, maxRetries = 3) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const res = await fetch(url, options)
+
+    // Handle rate-limit responses with retry
+    if (res.status === 429) {
+      if (attempt === maxRetries) {
+        throw new Error('Vimeo API rate limit exceeded after multiple retries.')
+      }
+      const retryAfter = parseInt(res.headers.get('Retry-After') || '5', 10)
+      const delay = retryAfter * 1000
+      console.warn(
+        `Vimeo rate limit hit (attempt ${attempt + 1}/${maxRetries}). Retrying in ${retryAfter}s…`
+      )
+      await new Promise((r) => setTimeout(r, delay))
+      continue
+    }
+
+    // Proactively slow down when nearing the rate limit
+    const remaining = parseInt(res.headers.get('X-RateLimit-Remaining'), 10)
+    if (!isNaN(remaining) && remaining < 10) {
+      const cooldown = remaining < 3 ? 1000 : 500
+      await new Promise((r) => setTimeout(r, cooldown))
+    }
+
+    return res
+  }
+}
+
 export const setPluginConfig = (config) => {
   pluginConfig = { ...pluginConfig, ...config }
 }

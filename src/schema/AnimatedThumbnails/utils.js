@@ -1,4 +1,4 @@
-import { getPluginConfig } from '../../helpers'
+import { getPluginConfig, vimeoFetch } from '../../helpers'
 
 // You can find more info here:
 // https://developer.vimeo.com/api/reference/videos/3.4.8#create_animated_thumbset
@@ -10,12 +10,15 @@ export const getExistingVideoThumbnails = async (uri) => {
   const pluginConfig = getPluginConfig()
   const vimeoAccessToken = pluginConfig?.accessToken
 
-  const res = await fetch(`https://api.vimeo.com${uri}/animated_thumbsets`, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${vimeoAccessToken}`,
-    },
-  })
+  const res = await vimeoFetch(
+    `https://api.vimeo.com${uri}/animated_thumbsets`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${vimeoAccessToken}`,
+      },
+    }
+  )
 
   const apiResponse = await res.json()
   if (apiResponse.error) {
@@ -35,7 +38,7 @@ export const deleteExistingVideoThumbnails = async (thumb) => {
 
   const thumbsetUri = thumb.uri
   if (thumbsetUri) {
-    const res = await fetch(`https://api.vimeo.com${thumbsetUri}`, {
+    const res = await vimeoFetch(`https://api.vimeo.com${thumbsetUri}`, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${vimeoAccessToken}`,
@@ -60,18 +63,21 @@ export const createSetOfAnimatedThumbnails = async (
   const pluginConfig = getPluginConfig()
   const vimeoAccessToken = pluginConfig?.accessToken
 
-  const res = await fetch(`https://api.vimeo.com${uri}/animated_thumbsets`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${vimeoAccessToken}`,
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      start_time: startTime,
-      duration,
-    }),
-  })
+  const res = await vimeoFetch(
+    `https://api.vimeo.com${uri}/animated_thumbsets`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${vimeoAccessToken}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        start_time: startTime,
+        duration,
+      }),
+    }
+  )
 
   return await res.json()
 }

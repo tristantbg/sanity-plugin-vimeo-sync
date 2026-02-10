@@ -14,7 +14,7 @@ import { useEffect, useState } from 'react'
 import { FaVimeoV } from 'react-icons/fa'
 import { useSource } from 'sanity'
 import { namespace } from '../constants'
-import { addKeys, setPluginConfig } from '../helpers'
+import { addKeys, setPluginConfig, vimeoFetch } from '../helpers'
 import { getExistingVideoThumbnails } from '../schema/AnimatedThumbnails/utils'
 
 const pluginConfigKeys = [
@@ -65,7 +65,7 @@ export const VimeoSyncView = (options) => {
     let page
 
     try {
-      const res = await fetch(`https://api.vimeo.com${url}`, {
+      const res = await vimeoFetch(`https://api.vimeo.com${url}`, {
         headers: {
           Authorization: `Bearer ${vimeoAccessToken}`,
         },
@@ -144,11 +144,6 @@ export const VimeoSyncView = (options) => {
         setCurrentVideo(
           Math.min(i + BATCH_SIZE, videos.length) + (page - 1) * perPage
         )
-
-        // Small delay between batches to respect Vimeo rate limits
-        if (i + BATCH_SIZE < videos.length) {
-          await new Promise((resolve) => setTimeout(resolve, 100))
-        }
       }
 
       await transaction.commit()
@@ -199,7 +194,7 @@ export const VimeoSyncView = (options) => {
     setStatus({ type: 'loading' })
     setVideosEntry([])
     try {
-      const res = await fetch(vimeoFetchUrl, {
+      const res = await vimeoFetch(vimeoFetchUrl, {
         headers: {
           Authorization: `Bearer ${vimeoAccessToken}`,
         },
