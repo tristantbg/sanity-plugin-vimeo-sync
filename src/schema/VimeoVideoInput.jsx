@@ -1,14 +1,18 @@
-import { ClockIcon, LinkIcon, PlayIcon } from '@sanity/icons'
+import { ClockIcon, LinkIcon } from '@sanity/icons'
+import { Box, Button, Card, Flex, Spinner, Stack, Text } from '@sanity/ui'
 import {
-  Box,
-  Button,
-  Card,
-  Flex,
-  Spinner,
-  Stack,
-  Text,
-  Tooltip,
-} from '@sanity/ui'
+  MediaController,
+  MediaControlBar,
+  MediaPlayButton,
+  MediaSeekBackwardButton,
+  MediaSeekForwardButton,
+  MediaMuteButton,
+  MediaVolumeRange,
+  MediaTimeRange,
+  MediaTimeDisplay,
+  MediaLoadingIndicator,
+} from 'media-chrome/react'
+import 'vimeo-video-element'
 import { useCallback, useMemo, useState } from 'react'
 import { useClient } from 'sanity'
 
@@ -22,16 +26,15 @@ function formatDuration(seconds) {
 /**
  * Custom input component for the `vimeo.video` schema type.
  * Resolves the referenced vimeo document and displays a
- * video player preview with metadata, inspired by sanity-plugin-mux-input.
+ * video player preview with metadata, using media-chrome for playback.
  */
 export default function VimeoVideoInput(props) {
   const { value, renderDefault } = props
-  const ref = value?.video?._ref
+  const ref = value?._ref
   const client = useClient({ apiVersion: '2025-02-07' })
   const [video, setVideo] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [showPlayer, setShowPlayer] = useState(false)
 
   // Fetch the referenced vimeo document
   useMemo(() => {
@@ -68,16 +71,6 @@ export default function VimeoVideoInput(props) {
       })
   }, [ref, client])
 
-  const bestSource = useMemo(() => {
-    if (!video?.srcset?.length) return null
-    // Pick the HD source or the first available
-    return (
-      video.srcset.find((s) => s.height === 720) ||
-      video.srcset.find((s) => s.height === 1080) ||
-      video.srcset[0]
-    )
-  }, [video])
-
   const handleOpenVimeo = useCallback(() => {
     if (video?.link) window.open(video.link, '_blank')
   }, [video])
@@ -107,123 +100,89 @@ export default function VimeoVideoInput(props) {
 
       {video && !loading && (
         <Card border radius={2} overflow="hidden" tone="transparent">
-          {/* Thumbnail / Player */}
-          <Box
-            style={{
-              position: 'relative',
-              aspectRatio: video.aspectRatio
-                ? `${video.aspectRatio}`
-                : '16 / 9',
-              background: '#000',
-              cursor: bestSource && !showPlayer ? 'pointer' : 'default',
-            }}
-            onClick={() => {
-              if (bestSource && !showPlayer) setShowPlayer(true)
-            }}
-          >
-            {showPlayer && bestSource ? (
-              <video
-                src={bestSource.link}
-                controls
-                autoPlay
+          {/* media-chrome player with vimeo-video-element */}
+          {video.link ? (
+            <MediaController
+              style={{
+                width: '100%',
+                aspectRatio: '16/9',
+              }}
+            >
+              <vimeo-video
+                slot="media"
+                src={video.link}
+                crossorigin
+                playsInline
+              />
+              <MediaLoadingIndicator noAutohide slot="centered-chrome" />
+              <MediaControlBar>
+                <MediaPlayButton></MediaPlayButton>
+                <MediaSeekBackwardButton></MediaSeekBackwardButton>
+                <MediaSeekForwardButton></MediaSeekForwardButton>
+                <MediaTimeRange></MediaTimeRange>
+                <MediaTimeDisplay showDuration></MediaTimeDisplay>
+                <MediaMuteButton></MediaMuteButton>
+                <MediaVolumeRange></MediaVolumeRange>
+              </MediaControlBar>
+            </MediaController>
+          ) : video.thumbnail ? (
+            <Box
+              style={{
+                aspectRatio: video.aspectRatio
+                  ? `${video.aspectRatio}`
+                  : '16 / 9',
+                background: '#000',
+              }}
+            >
+              <img
+                src={video.thumbnail}
+                alt={video.name || 'Video thumbnail'}
                 style={{
                   width: '100%',
                   height: '100%',
-                  objectFit: 'contain',
+                  objectFit: 'cover',
                   display: 'block',
                 }}
               />
-            ) : (
-              <>
-                {video.thumbnail && (
-                  <img
-                    src={video.thumbnail}
-                    alt={video.name || 'Video thumbnail'}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      display: 'block',
-                    }}
-                  />
-                )}
-                {bestSource && (
-                  <Flex
-                    align="center"
-                    justify="center"
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                    }}
-                  >
-                    <Card
-                      padding={3}
-                      radius={100}
-                      style={{
-                        background: 'rgba(0,0,0,0.6)',
-                        color: '#fff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Text size={4} style={{ color: '#fff' }}>
-                        <PlayIcon />
-                      </Text>
-                    </Card>
-                  </Flex>
-                )}
-              </>
-            )}
-          </Box>
+            </Box>
+          ) : null}
 
           {/* Metadata */}
           <Box padding={3}>
-            <Stack space={3}>
-              {video.name && (
-                <Text size={1} weight="semibold">
-                  {video.name}
-                </Text>
-              )}
-              <Flex align="center" gap={4} wrap="wrap">
-                {video.duration != null && (
-                  <Flex align="center" gap={1}>
-                    <Text size={1} muted>
-                      <ClockIcon />
-                    </Text>
-                    <Text size={1} muted>
-                      {formatDuration(video.duration)}
-                    </Text>
-                  </Flex>
-                )}
-                {video.width && video.height && (
-                  <Text size={1} muted>
-                    {video.width}×{video.height}
+            <Flex align="center" gap={3}>
+              <Stack space={2} style={{ flex: 1 }}>
+                {video.name && (
+                  <Text size={1} weight="semibold">
+                    {video.name}
                   </Text>
                 )}
-              </Flex>
+                <Flex align="center" gap={4} wrap="wrap">
+                  {video.duration != null && (
+                    <Flex align="center" gap={1}>
+                      <Text size={1} muted>
+                        {formatDuration(video.duration)}
+                      </Text>
+                    </Flex>
+                  )}
+                  {video.width && video.height && (
+                    <Text size={1} muted>
+                      {video.width}×{video.height}
+                    </Text>
+                  )}
+                </Flex>
+              </Stack>
               {video.link && (
-                <Tooltip
-                  content={
-                    <Box padding={2}>
-                      <Text size={1}>Open on Vimeo</Text>
-                    </Box>
-                  }
-                  placement="top"
-                  portal
-                >
-                  <Button
-                    icon={LinkIcon}
-                    mode="bleed"
-                    tone="primary"
-                    text="Open on Vimeo"
-                    fontSize={1}
-                    padding={2}
-                    onClick={handleOpenVimeo}
-                  />
-                </Tooltip>
+                <Button
+                  icon={LinkIcon}
+                  mode="ghost"
+                  tone="primary"
+                  text="Open on Vimeo"
+                  fontSize={1}
+                  padding={2}
+                  onClick={handleOpenVimeo}
+                />
               )}
-            </Stack>
+            </Flex>
           </Box>
         </Card>
       )}

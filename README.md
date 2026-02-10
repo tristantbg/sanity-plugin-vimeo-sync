@@ -127,26 +127,24 @@ export default defineType({
 })
 ```
 
-`vimeo.video` is an object type with a built-in reference to the `vimeo` document type. It includes:
+`vimeo.video` is a reference type that points to the `vimeo` document type. It includes:
 
 - A **video player preview** — click the thumbnail to play the video inline in the Studio.
 - **Video metadata** — title, duration, and resolution displayed below the player.
 - A **link to Vimeo** — open the video directly on vimeo.com.
 - **Thumbnail preview** — shown in document lists and reference previews.
 
-To query a `vimeo.video` field, follow the nested reference:
+To query a `vimeo.video` field, dereference it directly:
 
 ```groq
 *[_type == "myDocument"] {
-  video {
-    video-> {
-      name,
-      link,
-      duration,
-      aspectRatio,
-      "thumbnail": pictures[2].link,
-      "sources": srcset[] { link, width, height }
-    }
+  video-> {
+    name,
+    link,
+    duration,
+    aspectRatio,
+    "thumbnail": pictures[2].link,
+    "sources": srcset[] { link, width, height }
   }
 }
 ```
