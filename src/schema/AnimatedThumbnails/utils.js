@@ -1,4 +1,4 @@
-import {getPluginConfig} from '../../helpers'
+import { getPluginConfig } from '../../helpers'
 
 // You can find more info here:
 // https://developer.vimeo.com/api/reference/videos/3.4.8#create_animated_thumbset
@@ -43,7 +43,7 @@ export const deleteExistingVideoThumbnails = async (thumb) => {
     })
 
     if (res.ok && res.status === 204) {
-      return {success: true}
+      return { success: true }
     } else {
       throw new Error('Error deleting animated thumbnails: ' + res.statusText)
     }
@@ -52,7 +52,11 @@ export const deleteExistingVideoThumbnails = async (thumb) => {
   }
 }
 
-export const createSetOfAnimatedThumbnails = async (uri, startTime, duration) => {
+export const createSetOfAnimatedThumbnails = async (
+  uri,
+  startTime,
+  duration
+) => {
   const pluginConfig = getPluginConfig()
   const vimeoAccessToken = pluginConfig?.accessToken
 

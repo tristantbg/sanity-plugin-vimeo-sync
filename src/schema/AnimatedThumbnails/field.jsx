@@ -1,7 +1,7 @@
-import {Card, Text} from '@sanity/ui'
+import { Card, Text } from '@sanity/ui'
 
 export function field(props) {
-  const {children, title, description, value = ''} = props
+  const { children, title, description, value = '' } = props
   return (
     <Card padding={2}>
       <Card paddingY={2} tone="inherit">

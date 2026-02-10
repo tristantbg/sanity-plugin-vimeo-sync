@@ -1,7 +1,7 @@
-import {defineField} from 'sanity'
-import {quickFields} from '../../helpers'
-import {input} from './Input'
-import {field} from './field'
+import { defineField } from 'sanity'
+import { quickFields } from '../../helpers'
+import { input } from './Input'
+import { field } from './field'
 
 export default defineField({
   type: 'object',

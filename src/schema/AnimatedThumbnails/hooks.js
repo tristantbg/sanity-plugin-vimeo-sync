@@ -1,5 +1,5 @@
-import {useState} from 'react'
-import {ps} from './messages'
+import { useState } from 'react'
+import { ps } from './messages'
 import {
   createSetOfAnimatedThumbnails,
   deleteExistingVideoThumbnails,
@@ -7,9 +7,12 @@ import {
 } from './utils'
 
 export const useAnimatedThumbs = (uri, field) => {
-  const hasThumbnails = field?.thumbnails?.length && field?.thumbnails?.[0]?.status === 'completed'
+  const hasThumbnails =
+    field?.thumbnails?.length && field?.thumbnails?.[0]?.status === 'completed'
   const [status, setStatus] = useState(
-    hasThumbnails ? {type: 'already-generated'} : {type: 'idle', message: undefined},
+    hasThumbnails
+      ? { type: 'already-generated' }
+      : { type: 'idle', message: undefined }
   )
   const [attempt, setAttempt] = useState(0)
   const [items, setItems] = useState(hasThumbnails ? field.thumbnails : [])
@@ -21,8 +24,8 @@ export const useAnimatedThumbs = (uri, field) => {
       pollInterval: 1 * 60 * 1000, // 1 * 60 * 1000 1 minute
     }
 
-    const options = {...defaultOpts, ...opts}
-    const {startTime, loop, timeout, pollInterval} = options
+    const options = { ...defaultOpts, ...opts }
+    const { startTime, loop, timeout, pollInterval } = options
 
     if (timeout < pollInterval) {
       throw new Error('Poll interval is greater than timeout')
@@ -37,10 +40,12 @@ export const useAnimatedThumbs = (uri, field) => {
     } else if (Date.now() - startTime > timeout) {
       throw new Error(
         `Timeout: Animated thumbnails generation took longer than ${timeout / pollInterval} minutes for video:`,
-        uri,
+        uri
       )
     } else if (loop) {
-      console.log('Waiting for animated thumbnails generation to complete for video')
+      console.log(
+        'Waiting for animated thumbnails generation to complete for video'
+      )
       setAttempt((prev) => {
         const curr = prev + 1
         setStatus(ps('loading', curr))
@@ -48,7 +53,7 @@ export const useAnimatedThumbs = (uri, field) => {
       })
 
       await new Promise((resolve) => setTimeout(resolve, pollInterval)) // wait for 1 minute
-      return await checkStatus({startTime})
+      return await checkStatus({ startTime })
     }
   }
 
@@ -76,12 +81,15 @@ export const useAnimatedThumbs = (uri, field) => {
         return items
       }
 
-      setStatus({type: 'error', message: 'Unkown error. No items found. Please report this issue.'})
+      setStatus({
+        type: 'error',
+        message: 'Unkown error. No items found. Please report this issue.',
+      })
       // Delay to prevent 429 error
       await new Promise((resolve) => setTimeout(resolve, 1000))
     } catch (e) {
       console.error('Error generating thumbnails', e)
-      setStatus({type: 'error', message: e.message})
+      setStatus({ type: 'error', message: e.message })
       return
     }
   }
@@ -94,9 +102,9 @@ export const useAnimatedThumbs = (uri, field) => {
       }
       setStatus(ps('sucess', null, 'delete'))
     } catch (e) {
-      setStatus({type: 'error', message: e.message})
+      setStatus({ type: 'error', message: e.message })
     }
   }
 
-  return {status, attempt, items, generateThumbs, deleteThumbs}
+  return { status, attempt, items, generateThumbs, deleteThumbs }
 }

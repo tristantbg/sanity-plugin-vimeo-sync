@@ -1,11 +1,11 @@
-import {GenerateIcon} from '@sanity/icons'
-import {useSecrets} from '@sanity/studio-secrets'
-import {Button, Card, Flex, Grid, Spinner, Text} from '@sanity/ui'
-import {useEffect} from 'react'
-import {MemberField, set, useFormValue} from 'sanity'
-import {namespace} from '../../constants'
-import {setPluginConfig} from '../../helpers'
-import {useAnimatedThumbs} from './hooks'
+import { GenerateIcon } from '@sanity/icons'
+import { useSecrets } from '@sanity/studio-secrets'
+import { Button, Card, Flex, Grid, Spinner, Text } from '@sanity/ui'
+import { useEffect } from 'react'
+import { MemberField, set, useFormValue } from 'sanity'
+import { namespace } from '../../constants'
+import { setPluginConfig } from '../../helpers'
+import { useAnimatedThumbs } from './hooks'
 
 export function input(props) {
   const {
@@ -19,11 +19,13 @@ export function input(props) {
     renderDefault,
   } = props
 
-  const {secrets, loading} = useSecrets(namespace)
+  const { secrets, loading } = useSecrets(namespace)
 
   useEffect(() => {
     if (!secrets?.apiKey && !loading) {
-      console.error('Vimeo access token is not set. Please set it in the Studio Secrets.')
+      console.error(
+        'Vimeo access token is not set. Please set it in the Studio Secrets.'
+      )
     } else if (secrets?.apiKey) {
       setPluginConfig({
         accessToken: secrets.apiKey,
@@ -34,13 +36,16 @@ export function input(props) {
   const videoUri = useFormValue(['uri'])
   const thumbnails = useFormValue(['animatedThumbnails'])
 
-  const {status, items, generateThumbs, deleteThumbs} = useAnimatedThumbs(videoUri, thumbnails)
+  const { status, items, generateThumbs, deleteThumbs } = useAnimatedThumbs(
+    videoUri,
+    thumbnails
+  )
 
   const startTimeMember = members.find(
-    (member) => member.kind === 'field' && member.name === 'startTime',
+    (member) => member.kind === 'field' && member.name === 'startTime'
   )
   const durationMember = members.find(
-    (member) => member.kind === 'field' && member.name === 'duration',
+    (member) => member.kind === 'field' && member.name === 'duration'
   )
 
   useEffect(() => {
@@ -59,12 +64,15 @@ export function input(props) {
 
     const generatedItems = await generateThumbs(
       startTimeMember?.field?.value || 0,
-      durationMember?.field?.value || 6,
+      durationMember?.field?.value || 6
     )
 
     const itemsWithKeys = generatedItems.map((item) => {
-      const sizesWithKey = item.sizes.map((size) => ({...size, _key: `size-${size.width}`}))
-      return {...item, sizes: sizesWithKey, _key: `thumb-${item.clip_uri}`}
+      const sizesWithKey = item.sizes.map((size) => ({
+        ...size,
+        _key: `size-${size.width}`,
+      }))
+      return { ...item, sizes: sizesWithKey, _key: `thumb-${item.clip_uri}` }
     })
 
     const duration = itemsWithKeys[0]?.sizes?.[0]?.duration
@@ -116,7 +124,9 @@ export function input(props) {
             icon={GenerateIcon}
             text="Generate animated Thumbnails"
             onClick={handleGenerate}
-            disabled={status.type === 'loading' || status.type === 'error' || isInvalid}
+            disabled={
+              status.type === 'loading' || status.type === 'error' || isInvalid
+            }
           />
         )
     }

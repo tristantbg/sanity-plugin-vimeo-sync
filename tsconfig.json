@@ -1,8 +1,5 @@
 {
   "extends": "./tsconfig.settings",
-  "include": [
-    "src",
-    "./package.config.ts"
-  ],
-  "noCheck": true,
+  "include": ["src", "./package.config.ts"],
+  "noCheck": true
 }

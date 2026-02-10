@@ -1,25 +1,31 @@
-import {MdSync} from 'react-icons/md'
-import {definePlugin} from 'sanity'
+import { SyncIcon } from '@sanity/icons'
+import { definePlugin } from 'sanity'
 import VimeoObjectPictures from './schema/VimeoObjectPictures'
 import VimeoObjectSrcset from './schema/VimeoObjectSrcset'
 import VimeoSchema from './schema/VimeoSchema'
+import VimeoVideoField from './schema/vimeoVideoField'
 
-import {setPluginConfig} from './helpers'
-import {VimeoSyncView} from './tool/VimeoSync'
+import { setPluginConfig } from './helpers'
+import { VimeoSyncView } from './tool/VimeoSync'
 
 /**
  * Usage in `sanity.config.ts` (or .js)
  *
  * ```ts
- * import {defineConfig} from 'sanity'
- * import {VimeoSync} from 'sanity-plugin-vimeo-sync'
+ * import { defineConfig } from 'sanity'
+ * import { vimeoSync } from 'sanity-plugin-vimeo-sync'
  *
  * export default defineConfig({
  *   // ...
- *   plugins: [VimeoSync()],
+ *   plugins: [
+ *     vimeoSync({
+ *       folderId: '', // optional — restrict sync to a specific Vimeo folder
+ *     }),
+ *   ],
  * })
  * ```
  */
+
 export const vimeoSync = definePlugin((config = {}) => {
   setPluginConfig(config)
 
@@ -32,13 +38,18 @@ export const vimeoSync = definePlugin((config = {}) => {
         {
           name: 'vimeo-sync',
           title: 'Vimeo Sync',
-          icon: MdSync,
+          icon: SyncIcon,
           component: () => <VimeoSyncView {...config} />,
         },
       ]
     },
     schema: {
-      types: [VimeoSchema, VimeoObjectSrcset, VimeoObjectPictures],
+      types: [
+        VimeoSchema,
+        VimeoObjectSrcset,
+        VimeoObjectPictures,
+        VimeoVideoField,
+      ],
     },
   }
 })

@@ -1,10 +1,10 @@
-import {nanoid} from 'nanoid'
+import { nanoid } from 'nanoid'
 
 // config.js
 let pluginConfig = {}
 
 export const setPluginConfig = (config) => {
-  pluginConfig = {...pluginConfig, ...config}
+  pluginConfig = { ...pluginConfig, ...config }
 }
 
 export const overridePluginConfig = (config) => {
@@ -29,7 +29,7 @@ export function quickFields(
   preview = [],
   group = '',
   description,
-  readOnly = true,
+  readOnly = true
 ) {
   const field = {
     readOnly,
