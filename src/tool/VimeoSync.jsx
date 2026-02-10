@@ -79,56 +79,75 @@ export const VimeoSyncView = (options) => {
       const transaction = client.transaction()
       const videos = apiResponse.data
 
-      for (let [index, video] of videos?.entries?.()) {
-        // every page can have at least 100 results
-        setCurrentVideo(index + 1 + (page - 1) * perPage)
-        if (video.files) {
-          const videoObject = {
-            _id: `vimeo-${video.uri.split('/').pop()}`,
-            _type: 'vimeo',
-            aspectRatio: video.width / video.height,
-            uri: video.uri,
-            description: video.description || '',
-            duration: video.duration,
-            height: video.height,
-            link: video.link,
-            name: video.name,
-            pictures: addKeys(video.pictures?.sizes || [], 'link'),
-            srcset: addKeys(video.files || [], 'md5'),
-            width: video.width,
-          }
-          const existingThumbnails = await getExistingVideoThumbnails(video.uri)
-          if (existingThumbnails?.length) {
-            const itemsWithKeys = existingThumbnails.map((item) => {
-              const sizesWithKey = item.sizes.map((size) => ({
-                ...size,
-                _key: `size-${size.width}`,
-              }))
-              return {
-                ...item,
-                sizes: sizesWithKey,
-                _key: `thumb-${item.clip_uri}`,
-              }
-            })
-
-            const duration = itemsWithKeys[0]?.sizes[0]?.duration
-            const startTime = itemsWithKeys[0]?.sizes[0]?.startTime
-
-            videoObject.animatedThumbnails = {
-              thumbnails: itemsWithKeys,
-              startTime,
-              duration,
+      // Process videos in parallel batches to speed up sync
+      const BATCH_SIZE = 5
+      for (let i = 0; i < videos.length; i += BATCH_SIZE) {
+        const batch = videos.slice(i, i + BATCH_SIZE)
+        const results = await Promise.all(
+          batch.map(async (video) => {
+            if (!video.files) {
+              throw new Error(
+                'Missing video files. Ensure your token has the "video_files" scope and your Vimeo account is on a PRO plan or higher.'
+              )
             }
-          }
 
+            const videoObject = {
+              _id: `vimeo-${video.uri.split('/').pop()}`,
+              _type: 'vimeo',
+              aspectRatio: video.width / video.height,
+              uri: video.uri,
+              description: video.description || '',
+              duration: video.duration,
+              height: video.height,
+              link: video.link,
+              name: video.name,
+              pictures: addKeys(video.pictures?.sizes || [], 'link'),
+              srcset: addKeys(video.files || [], 'md5'),
+              width: video.width,
+            }
+
+            const existingThumbnails = await getExistingVideoThumbnails(
+              video.uri
+            )
+            if (existingThumbnails?.length) {
+              const itemsWithKeys = existingThumbnails.map((item) => {
+                const sizesWithKey = item.sizes.map((size) => ({
+                  ...size,
+                  _key: `size-${size.width}`,
+                }))
+                return {
+                  ...item,
+                  sizes: sizesWithKey,
+                  _key: `thumb-${item.clip_uri}`,
+                }
+              })
+
+              const duration = itemsWithKeys[0]?.sizes[0]?.duration
+              const startTime = itemsWithKeys[0]?.sizes[0]?.startTime
+
+              videoObject.animatedThumbnails = {
+                thumbnails: itemsWithKeys,
+                startTime,
+                duration,
+              }
+            }
+
+            return videoObject
+          })
+        )
+
+        results.forEach((videoObject) => {
           transaction.createOrReplace(videoObject)
           videosEntry.push(videoObject)
-          // 300ms delay to prevent 429 error
-          await new Promise((resolve) => setTimeout(resolve, 300))
-        } else {
-          throw new Error(
-            'Missing video files. Ensure your token has the "video_files" scope and your Vimeo account is on a PRO plan or higher.'
-          )
+        })
+
+        setCurrentVideo(
+          Math.min(i + BATCH_SIZE, videos.length) + (page - 1) * perPage
+        )
+
+        // Small delay between batches to respect Vimeo rate limits
+        if (i + BATCH_SIZE < videos.length) {
+          await new Promise((resolve) => setTimeout(resolve, 100))
         }
       }
 
