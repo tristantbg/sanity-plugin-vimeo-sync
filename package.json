@@ -1,6 +1,6 @@
 {
   "name": "sanity-plugin-vimeo-sync",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "Sync Vimeo PRO videos into Sanity",
   "keywords": [
     "sanity",
