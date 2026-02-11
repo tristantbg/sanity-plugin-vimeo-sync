@@ -1,27 +1,10 @@
-import { ClockIcon, LinkIcon } from '@sanity/icons'
-import { Box, Button, Card, Flex, Spinner, Stack, Text } from '@sanity/ui'
-import {
-  MediaController,
-  MediaControlBar,
-  MediaPlayButton,
-  MediaSeekBackwardButton,
-  MediaSeekForwardButton,
-  MediaMuteButton,
-  MediaVolumeRange,
-  MediaTimeRange,
-  MediaTimeDisplay,
-  MediaLoadingIndicator,
-} from 'media-chrome/react'
-import 'vimeo-video-element'
-import { useCallback, useMemo, useState } from 'react'
-import { useClient } from 'sanity'
-
-function formatDuration(seconds) {
-  if (!seconds) return null
-  const m = Math.floor(seconds / 60)
-  const s = Math.floor(seconds % 60)
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
+import { Card, Flex, Spinner, Stack, Text } from '@sanity/ui'
+import { useMemo, useState } from 'react'
+import { useClient, useTranslation } from 'sanity'
+import { vimeoSyncLocaleNamespace } from '../i18n'
+import { VideoMetadata } from './components/VideoMetadata'
+import { VideoPlayer } from './components/VideoPlayer'
+import { VideoThumbnail } from './components/VideoThumbnail'
 
 /**
  * Custom input component for the `vimeo.video` schema type.
@@ -32,6 +15,7 @@ export default function VimeoVideoInput(props) {
   const { value, renderDefault } = props
   const ref = value?._ref
   const client = useClient({ apiVersion: '2025-02-07' })
+  const { t } = useTranslation(vimeoSyncLocaleNamespace)
   const [video, setVideo] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -57,6 +41,7 @@ export default function VimeoVideoInput(props) {
           description,
           "thumbnail": pictures[2].link,
           "thumbnailSmall": pictures[1].link,
+          "hls": srcset[quality == "hls"][0].link,
           "srcset": srcset[]{ link, width, height, quality }
         }`,
         { id: ref }
@@ -71,22 +56,16 @@ export default function VimeoVideoInput(props) {
       })
   }, [ref, client])
 
-  const handleOpenVimeo = useCallback(() => {
-    if (video?.link) window.open(video.link, '_blank')
-  }, [video])
-
   return (
     <Stack space={3}>
-      {/* Render the default reference input (search/select) */}
       {renderDefault(props)}
 
-      {/* Video preview card */}
       {loading && (
         <Card border padding={4} radius={2} tone="transparent">
           <Flex align="center" justify="center" gap={3}>
             <Spinner />
             <Text size={1} muted>
-              Loading video preview…
+              {t('video-input.loading')}
             </Text>
           </Flex>
         </Card>
@@ -94,96 +73,19 @@ export default function VimeoVideoInput(props) {
 
       {error && (
         <Card border padding={3} radius={2} tone="critical">
-          <Text size={1}>Error loading video: {error}</Text>
+          <Text size={1}>{t('video-input.error', { message: error })}</Text>
         </Card>
       )}
 
       {video && !loading && (
         <Card border radius={2} overflow="hidden" tone="transparent">
-          {/* media-chrome player with vimeo-video-element */}
-          {video.link ? (
-            <MediaController
-              style={{
-                width: '100%',
-                aspectRatio: '16/9',
-              }}
-            >
-              <vimeo-video
-                slot="media"
-                src={video.link}
-                crossorigin
-                playsInline
-              />
-              <MediaLoadingIndicator noAutohide slot="centered-chrome" />
-              <MediaControlBar>
-                <MediaPlayButton></MediaPlayButton>
-                <MediaSeekBackwardButton></MediaSeekBackwardButton>
-                <MediaSeekForwardButton></MediaSeekForwardButton>
-                <MediaTimeRange></MediaTimeRange>
-                <MediaTimeDisplay showDuration></MediaTimeDisplay>
-                <MediaMuteButton></MediaMuteButton>
-                <MediaVolumeRange></MediaVolumeRange>
-              </MediaControlBar>
-            </MediaController>
+          {video.hls || video.link ? (
+            <VideoPlayer video={video} />
           ) : video.thumbnail ? (
-            <Box
-              style={{
-                aspectRatio: video.aspectRatio
-                  ? `${video.aspectRatio}`
-                  : '16 / 9',
-                background: '#000',
-              }}
-            >
-              <img
-                src={video.thumbnail}
-                alt={video.name || 'Video thumbnail'}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  display: 'block',
-                }}
-              />
-            </Box>
+            <VideoThumbnail video={video} />
           ) : null}
 
-          {/* Metadata */}
-          <Box padding={3}>
-            <Flex align="center" gap={3}>
-              <Stack space={2} style={{ flex: 1 }}>
-                {video.name && (
-                  <Text size={1} weight="semibold">
-                    {video.name}
-                  </Text>
-                )}
-                <Flex align="center" gap={4} wrap="wrap">
-                  {video.duration != null && (
-                    <Flex align="center" gap={1}>
-                      <Text size={1} muted>
-                        {formatDuration(video.duration)}
-                      </Text>
-                    </Flex>
-                  )}
-                  {video.width && video.height && (
-                    <Text size={1} muted>
-                      {video.width}×{video.height}
-                    </Text>
-                  )}
-                </Flex>
-              </Stack>
-              {video.link && (
-                <Button
-                  icon={LinkIcon}
-                  mode="ghost"
-                  tone="primary"
-                  text="Open on Vimeo"
-                  fontSize={1}
-                  padding={2}
-                  onClick={handleOpenVimeo}
-                />
-              )}
-            </Flex>
-          </Box>
+          <VideoMetadata video={video} />
         </Card>
       )}
     </Stack>

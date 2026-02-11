@@ -1,5 +1,6 @@
 import { SyncIcon } from '@sanity/icons'
 import { definePlugin } from 'sanity'
+import { vimeoSyncUsEnglishLocaleBundle } from './i18n'
 import VimeoObjectPictures from './schema/VimeoObjectPictures'
 import VimeoObjectSrcset from './schema/VimeoObjectSrcset'
 import VimeoSchema from './schema/VimeoSchema'
@@ -50,6 +51,10 @@ export const vimeoSync = definePlugin((config = {}) => {
         VimeoObjectPictures,
         VimeoVideoField,
       ],
+    },
+
+    i18n: {
+      bundles: [vimeoSyncUsEnglishLocaleBundle],
     },
   }
 })

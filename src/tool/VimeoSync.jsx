@@ -1,31 +1,23 @@
-import { InfoOutlineIcon, SyncIcon } from '@sanity/icons'
-import { SettingsView, useSecrets } from '@sanity/studio-secrets'
-import {
-  Box,
-  Button,
-  Card,
-  Flex,
-  Heading,
-  Spinner,
-  Text,
-  Tooltip,
-} from '@sanity/ui'
-import { useEffect, useState } from 'react'
-import { FaVimeoV } from 'react-icons/fa'
-import { useSource } from 'sanity'
+import { useSecrets } from '@sanity/studio-secrets'
+import { Box, Card, Flex, Spinner, Text } from '@sanity/ui'
+import { useCallback, useEffect, useState } from 'react'
+import { useSource, useTranslation } from 'sanity'
 import { namespace } from '../constants'
 import { addKeys, setPluginConfig, vimeoFetch } from '../helpers'
+import { vimeoSyncLocaleNamespace } from '../i18n'
 import { getExistingVideoThumbnails } from '../schema/AnimatedThumbnails/utils'
-
-const pluginConfigKeys = [
-  {
-    key: 'apiKey',
-    title: 'API key',
-  },
-]
+import { InexistentWarning } from './components/InexistentWarning'
+import { MissingTokenBanner } from './components/MissingTokenBanner'
+import { SyncActions } from './components/SyncActions'
+import { SyncFooter } from './components/SyncFooter'
+import { SyncHeader } from './components/SyncHeader'
+import { SyncProgress } from './components/SyncProgress'
+import { VideoList } from './components/VideoList'
 
 export const VimeoSyncView = (options) => {
+  const { t } = useTranslation(vimeoSyncLocaleNamespace)
   const { secrets, loading } = useSecrets(namespace)
+
   useEffect(() => {
     if (!secrets?.apiKey && !loading) {
       console.error(
@@ -40,7 +32,6 @@ export const VimeoSyncView = (options) => {
 
   const { apiKey: vimeoAccessToken } = secrets || {}
 
-  const [showSettings, setShowSettings] = useState(false)
   const [inexistent, setInexistent] = useState([])
   const [videosEntry, setVideosEntry] = useState([])
 
@@ -53,11 +44,28 @@ export const VimeoSyncView = (options) => {
   const { getClient } = useSource()
   const client = getClient({ apiVersion: '2025-02-07' })
   const vimeoFolderId = folderId || process.env.SANITY_STUDIO_VIMEO_FOLDER_ID
+
   const vimeoFetchUrlParams =
     '?fields=uri,modified_time,created_time,name,description,link,pictures,files,width,height,duration&per_page=100'
   const vimeoFetchUrl = vimeoFolderId
     ? `https://api.vimeo.com/me/projects/${vimeoFolderId}/videos${vimeoFetchUrlParams}`
     : `https://api.vimeo.com/me/videos${vimeoFetchUrlParams}`
+
+  const handleSyncFinished = useCallback(
+    (entryCount) => {
+      setStatus({
+        type: 'finished',
+        message: t('sync.finished', {
+          count: entryCount,
+          time: new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        }),
+      })
+    },
+    [t]
+  )
 
   async function importVimeo(url) {
     let nextPage
@@ -73,22 +81,18 @@ export const VimeoSyncView = (options) => {
       const apiResponse = await res.json()
       nextPage = apiResponse.paging.next
       page = apiResponse.page
-
       perPage = apiResponse.per_page
 
       const transaction = client.transaction()
       const videos = apiResponse.data
 
-      // Process videos in parallel batches to speed up sync
       const BATCH_SIZE = 5
       for (let i = 0; i < videos.length; i += BATCH_SIZE) {
         const batch = videos.slice(i, i + BATCH_SIZE)
         const results = await Promise.all(
           batch.map(async (video) => {
             if (!video.files) {
-              throw new Error(
-                'Missing video files. Ensure your token has the "video_files" scope and your Vimeo account is on a PRO plan or higher.'
-              )
+              throw new Error(t('sync.error-missing-files'))
             }
 
             const videoObject = {
@@ -151,18 +155,11 @@ export const VimeoSyncView = (options) => {
         await importVimeo(nextPage)
       } else {
         await deleteIncompatibleVimeoDocuments(videosEntry)
-        setStatus({
-          type: 'finished',
-          message: `Finished syncing ${videosEntry.length} videos at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-        })
+        handleSyncFinished(videosEntry.length)
       }
     } catch (error) {
       console.error('Update failed: ', error.message)
-
-      setStatus({
-        type: 'error',
-        message: error.message,
-      })
+      setStatus({ type: 'error', message: error.message })
     }
   }
 
@@ -216,12 +213,13 @@ export const VimeoSyncView = (options) => {
         <Flex align="center" gap={3}>
           <Spinner />
           <Text size={2} weight="medium">
-            Loading Vimeo Sync plugin...
+            {t('tool.loading')}
           </Text>
         </Flex>
       </Card>
     )
   }
+
   return (
     <Card
       tone={
@@ -233,36 +231,7 @@ export const VimeoSyncView = (options) => {
     >
       <Box>
         <Card borderBottom padding={3} tone={'inherit'}>
-          <Flex justify={'space-between'} align={'center'}>
-            <Flex paddingY={3} align={'center'} gap={3}>
-              <FaVimeoV size={20} />
-              <Heading as="h1" size={0}>
-                Sanity Vimeo Sync
-              </Heading>
-            </Flex>
-
-            <Flex align={'center'} gap={1}>
-              <Button
-                fontSize={0}
-                mode="bleed"
-                onClick={() => setShowSettings(!showSettings)}
-                text={
-                  showSettings ? 'Hide Access Token' : 'Show/Edit Access Token'
-                }
-              />
-            </Flex>
-
-            {!showSettings ? null : (
-              <SettingsView
-                title={'Vimeo Sync Settings'}
-                namespace={namespace}
-                keys={pluginConfigKeys}
-                onClose={() => {
-                  setShowSettings(false)
-                }}
-              />
-            )}
-          </Flex>
+          <SyncHeader />
         </Card>
 
         <Flex
@@ -272,136 +241,30 @@ export const VimeoSyncView = (options) => {
           paddingY={4}
           align={'flex-start'}
         >
-          {!vimeoAccessToken && (
-            <Flex direction={'column'} gap={4}>
-              <Heading as="h3" size={1}>
-                Missing Vimeo Access Token
-              </Heading>
-              <Text>
-                No access token found. Click "Show/Edit Access Token" above to
-                configure it. Without a valid token, the tool cannot connect to
-                your Vimeo account to fetch or sync videos.
-              </Text>
-              <Text size={0}>
-                You can generate an access token from the{' '}
-                <a
-                  href="https://developer.vimeo.com/apps"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Vimeo Developer Dashboard
-                </a>
-                . Required scopes: private, create, delete, video_files, public.
-              </Text>
-            </Flex>
-          )}
+          {!vimeoAccessToken && <MissingTokenBanner />}
 
-          <Flex gap={3}>
-            {status.type !== 'loading' ? (
-              <Button
-                icon={SyncIcon}
-                mode="ghost"
-                text={'Load Vimeo videos'}
-                onClick={() => fetchVimeo()}
-                disabled={!vimeoAccessToken}
-              />
-            ) : (
-              <Card tone="neutral" padding={3}>
-                <Flex align={'center'} gap={3}>
-                  <Spinner />
-                  <Text size={1} weight="medium">
-                    Loading...
-                  </Text>
-                </Flex>
-              </Card>
-            )}
+          <SyncActions
+            status={status}
+            onSync={fetchVimeo}
+            disabled={!vimeoAccessToken}
+          />
 
-            {(status.type === 'finished' || status.type === 'error') && (
-              <Card
-                padding={3}
-                border={true}
-                tone={status.type === 'error' ? 'critical' : 'positive'}
-              >
-                {status.type === 'error' && (
-                  <Text size={1}>Error: {status.message}</Text>
-                )}
-                {status.type === 'finished' && (
-                  <Text size={1}>{status.message}</Text>
-                )}
-              </Card>
-            )}
-          </Flex>
-
-          {inexistent?.length > 0 && (
-            <Card padding={3} border={true} tone={'caution'}>
-              <Flex direction={'column'} gap={3}>
-                <Text size={2}>
-                  Found {inexistent.length} removed video
-                  {inexistent.length > 1 ? 's' : ''} that could not be deleted
-                  because {inexistent.length > 1 ? 'they are' : 'it is'} still
-                  referenced by other documents:
-                </Text>
-                {inexistent.map((id) => (
-                  <Text key={id} size={1}>
-                    {id}
-                  </Text>
-                ))}
-              </Flex>
-            </Card>
-          )}
+          <InexistentWarning inexistent={inexistent} />
         </Flex>
 
         {status.type === 'loading' && count && currentVideo ? (
-          <Card paddingX={3}>
-            <Box>
-              <Flex direction={'column'} gap={3}>
-                {countPages && <Text size={2}>{count} videos found!</Text>}
-                <progress value={currentVideo} max={count} />
-                <Flex direction={'column'} gap={1}>
-                  {count && currentVideo && (
-                    <Text size={1}>
-                      Processing {currentVideo} of {count}
-                    </Text>
-                  )}
-                </Flex>
-              </Flex>
-            </Box>
-          </Card>
+          <SyncProgress
+            count={count}
+            countPages={countPages}
+            currentVideo={currentVideo}
+          />
         ) : null}
+
+        <VideoList client={client} />
       </Box>
 
       <Card as="footer" padding={3} borderTop>
-        <Flex justify={'space-between'} align={'center'}>
-          <Text size={0}>License MIT © Tristan Bagot + Daniele Polacco</Text>
-          <Text>
-            <Tooltip
-              content={
-                <Box padding={1} style={{ maxWidth: '300px' }}>
-                  <Flex gap={5} direction={'column'}>
-                    <Text muted size={1}>
-                      This tool seamlessly integrates your Vimeo account with
-                      Sanity by fetching all available videos and importing them
-                      into your Sanity project.
-                    </Text>
-                    <Text muted size={1}>
-                      It ensures your content stays up to date by automatically
-                      detecting and removing any videos that have been deleted
-                      or are no longer accessible in your Vimeo account.
-                    </Text>
-                    <Text muted size={1}>
-                      This helps maintain a clean and accurate video library
-                      within Sanity without the need for manual updates.
-                    </Text>
-                  </Flex>
-                </Box>
-              }
-              placement="top"
-              portal
-            >
-              <InfoOutlineIcon />
-            </Tooltip>
-          </Text>
-        </Flex>
+        <SyncFooter />
       </Card>
     </Card>
   )
