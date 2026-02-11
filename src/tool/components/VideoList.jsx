@@ -51,7 +51,7 @@ export function VideoList() {
 
   return (
     <Flex borderTop padding={3}>
-      <Stack space={3} style={{ width: '100%' }}>
+      <Stack space={3} width="100%">
         <Flex align="center" gap={3}>
           <Box style={{ flex: 1 }}>
             <TextInput
@@ -68,7 +68,13 @@ export function VideoList() {
         </Flex>
 
         {docsLoading ? (
-          <Flex align="center" gap={2} paddingY={3}>
+          <Flex
+            align="center"
+            justify="center"
+            gap={2}
+            paddingY={3}
+            width="100%"
+          >
             <Spinner />
             <Text size={1} muted>
               {t('video-list.loading')}
@@ -90,7 +96,6 @@ export function VideoList() {
                 as={IntentLink}
                 intent="edit"
                 params={{ id: doc._id, type: 'vimeo' }}
-                padding={2}
                 radius={2}
                 data-as="a"
                 style={{ textDecoration: 'none' }}

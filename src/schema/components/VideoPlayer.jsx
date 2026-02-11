@@ -11,7 +11,7 @@ import {
   MediaLoadingIndicator,
   MediaFullscreenButton,
 } from 'media-chrome/react'
-import 'hls-video-element'
+import HlsVideo from 'hls-video-element/react'
 
 export function VideoPlayer({ video }) {
   return (
@@ -21,11 +21,11 @@ export function VideoPlayer({ video }) {
         aspectRatio: '16/9',
       }}
     >
-      <hls-video
+      <HlsVideo
         slot="media"
-        src={video.hls || video.link}
-        crossorigin
-        playsinline
+        src={video.hls || video.mp4}
+        crossOrigin=""
+        playsInline
       />
       <MediaLoadingIndicator noAutohide slot="centered-chrome" />
       <MediaControlBar>

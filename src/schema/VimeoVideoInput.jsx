@@ -42,6 +42,7 @@ export default function VimeoVideoInput(props) {
           "thumbnail": pictures[2].link,
           "thumbnailSmall": pictures[1].link,
           "hls": srcset[quality == "hls"][0].link,
+          "mp4": srcset[quality != "hls"] | order(width desc)[0].link,
           "srcset": srcset[]{ link, width, height, quality }
         }`,
         { id: ref }
@@ -79,7 +80,7 @@ export default function VimeoVideoInput(props) {
 
       {video && !loading && (
         <Card border radius={2} overflow="hidden" tone="transparent">
-          {video.hls || video.link ? (
+          {video.hls || video.mp4 ? (
             <VideoPlayer video={video} />
           ) : video.thumbnail ? (
             <VideoThumbnail video={video} />
