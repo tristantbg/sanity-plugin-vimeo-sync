@@ -50,8 +50,8 @@ export function VideoList() {
       : t('video-list.count_other', { count: filteredDocs.length })
 
   return (
-    <Flex borderTop padding={3}>
-      <Stack space={3} width="100%">
+    <Flex paddingX={3}>
+      <Stack space={3} style={{ width: '100%' }}>
         <Flex align="center" gap={3}>
           <Box style={{ flex: 1 }}>
             <TextInput
@@ -73,7 +73,7 @@ export function VideoList() {
             justify="center"
             gap={2}
             paddingY={3}
-            width="100%"
+            style={{ width: '100%' }}
           >
             <Spinner />
             <Text size={1} muted>
