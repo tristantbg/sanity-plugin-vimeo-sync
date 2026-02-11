@@ -260,7 +260,7 @@ export const VimeoSyncView = (options) => {
           />
         ) : null}
 
-        <VideoList client={client} />
+        <VideoList />
       </Box>
 
       <Card as="footer" padding={3} borderTop>
