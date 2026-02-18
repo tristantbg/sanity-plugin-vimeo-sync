@@ -168,22 +168,47 @@ export const VimeoSyncView = (options) => {
     const inexistent = []
     const valid_ids = videos.map((v) => v._id)
     const query = '*[_type == "vimeo"] {_id}'
+
     try {
       const documents = await client.fetch(query)
-      let transaction = client.transaction()
-      documents.forEach(async (document) => {
-        if (!valid_ids.includes(document._id)) {
-          transaction.delete(document._id)
+      const documentsToDelete = documents.filter(
+        (document) => !valid_ids.includes(document._id)
+      )
+
+      if (documentsToDelete.length === 0) {
+        return
+      }
+
+      console.log(
+        `Removing ${documentsToDelete.length} documents no longer in Vimeo import`
+      )
+
+      const transaction = client.transaction()
+      documentsToDelete.forEach((document) => {
+        transaction.delete(document._id)
+      })
+
+      try {
+        await transaction.commit()
+        console.log(
+          `Successfully removed ${documentsToDelete.length} obsolete documents`
+        )
+      } catch (error) {
+        console.error('Failed to delete obsolete documents:', error)
+        // If batch deletion fails, try individual deletion
+        for (const document of documentsToDelete) {
           try {
-            await transaction.commit()
+            await client.delete(document._id)
           } catch (e) {
+            console.error(`Failed to delete ${document._id}:`, e)
             inexistent.push(document._id)
           }
         }
-      })
+      }
+
       setInexistent(inexistent)
     } catch (error) {
-      console.error('Sanity error:', error)
+      console.error('Error cleaning up obsolete documents:', error)
     }
   }
 
