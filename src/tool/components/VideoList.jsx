@@ -89,7 +89,7 @@ export function VideoList() {
             </Text>
           </Card>
         ) : (
-          <Stack space={1} style={{ maxHeight: '600px', overflowY: 'auto' }}>
+          <Stack space={1} style={{ maxHeight: '50vh', overflowY: 'auto' }}>
             {filteredDocs.map((doc) => (
               <Card
                 key={doc._id}
