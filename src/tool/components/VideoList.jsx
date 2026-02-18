@@ -50,7 +50,7 @@ export function VideoList() {
       : t('video-list.count_other', { count: filteredDocs.length })
 
   return (
-    <Flex padding={3} style={{ maxHeight: '300px', overflowY: 'auto' }}>
+    <Flex padding={3}>
       <Stack space={3} style={{ width: '100%' }}>
         <Flex align="center" gap={3}>
           <Box style={{ flex: 1 }}>
@@ -89,7 +89,7 @@ export function VideoList() {
             </Text>
           </Card>
         ) : (
-          <Stack space={1}>
+          <Stack space={1} style={{ maxHeight: '600px', overflowY: 'auto' }}>
             {filteredDocs.map((doc) => (
               <Card
                 key={doc._id}
