@@ -21,9 +21,7 @@ export const VimeoSyncView = (options) => {
 
   useEffect(() => {
     if (!secrets?.apiKey && !loading) {
-      console.error(
-        'Vimeo access token is not set. Open the Vimeo Sync tool and click "Show/Edit Access Token" to configure it.'
-      )
+      console.error(t('sync.error-missing-token'))
     } else if (secrets?.apiKey) {
       setPluginConfig({
         accessToken: secrets.apiKey,
@@ -94,156 +92,8 @@ export const VimeoSyncView = (options) => {
   const vimeoFetchUrlParams =
     '?fields=uri,modified_time,created_time,name,description,link,pictures,files,width,height,duration&per_page=100'
   const vimeoFetchUrl = vimeoFolderId
-    ? `https://api.vimeo.com/me/projects/${vimeoFolderId}/videos${vimeoFetchUrlParams}`
+    ? `https://api.vimeo.com/me/projects/${vimeoFolderId}/videos${vimeoFetchUrlParams}&include_subfolders=true`
     : `https://api.vimeo.com/me/videos${vimeoFetchUrlParams}`
-
-  // Recursively fetch all subfolders within a folder
-  async function fetchSubfolders(projectId) {
-    const subfolders = []
-    let nextPage = `/me/projects/${projectId}/items?per_page=100`
-
-    try {
-      while (nextPage) {
-        const res = await vimeoFetch(`https://api.vimeo.com${nextPage}`, {
-          headers: {
-            Authorization: `Bearer ${vimeoAccessToken}`,
-          },
-        })
-        const data = await res.json()
-
-        // Filter for folders (type: folder)
-        const folders = data.data.filter((item) => item.type === 'folder')
-        subfolders.push(...folders)
-
-        nextPage = data.paging?.next || null
-      }
-
-      console.log(
-        `Found ${subfolders.length} subfolder(s) in project ${projectId}`
-      )
-      return subfolders
-    } catch (error) {
-      console.error(
-        `Error fetching subfolders for project ${projectId}:`,
-        error.message
-      )
-      return []
-    }
-  }
-
-  // Count total videos across folder tree
-  async function countVideosInFolderTree(projectId, depth = 0) {
-    const indent = '  '.repeat(depth)
-    let totalCount = 0
-
-    try {
-      // Count videos in current folder
-      const videoUrl = `https://api.vimeo.com/me/projects/${projectId}/videos?per_page=1`
-      const res = await vimeoFetch(videoUrl, {
-        headers: {
-          Authorization: `Bearer ${vimeoAccessToken}`,
-        },
-      })
-      const data = await res.json()
-      totalCount += data.total
-
-      if (data.total > 0) {
-        console.log(
-          `${indent}Folder ${projectId} contains ${data.total} video(s)`
-        )
-      }
-
-      // Count videos in subfolders
-      const subfolders = await fetchSubfolders(projectId)
-
-      for (const subfolder of subfolders) {
-        const subfolderUri = subfolder.folder?.uri || subfolder.uri
-        if (subfolderUri) {
-          const subfolderId = subfolderUri.split('/').pop()
-
-          // First check if subfolder has any videos
-          const checkUrl = `https://api.vimeo.com/me/projects/${subfolderId}/videos?per_page=1`
-          const checkRes = await vimeoFetch(checkUrl, {
-            headers: {
-              Authorization: `Bearer ${vimeoAccessToken}`,
-            },
-          })
-          const checkData = await checkRes.json()
-
-          // Only process subfolders that contain videos
-          if (checkData.total > 0) {
-            const subCount = await countVideosInFolderTree(
-              subfolderId,
-              depth + 1
-            )
-            totalCount += subCount
-          }
-        }
-      }
-
-      return totalCount
-    } catch (error) {
-      console.error(
-        `Error counting videos in folder ${projectId}:`,
-        error.message
-      )
-      return totalCount
-    }
-  }
-
-  // Recursively fetch videos from a folder and its subfolders
-  async function fetchVideosFromFolderTree(projectId, depth = 0) {
-    const indent = '  '.repeat(depth)
-    console.log(`${indent}Fetching videos from folder ${projectId}...`)
-
-    // Fetch videos from current folder
-    const videoUrl = `https://api.vimeo.com/me/projects/${projectId}/videos${vimeoFetchUrlParams}`
-    const res = await vimeoFetch(videoUrl, {
-      headers: {
-        Authorization: `Bearer ${vimeoAccessToken}`,
-      },
-    })
-    const data = await res.json()
-
-    // Import videos from current folder
-    if (data.total > 0) {
-      console.log(
-        `${indent}Processing ${data.total} video(s) from folder ${projectId}`
-      )
-      await importVimeo(data.paging.first)
-    }
-
-    // Fetch and process subfolders
-    const subfolders = await fetchSubfolders(projectId)
-
-    for (const subfolder of subfolders) {
-      const subfolderUri = subfolder.folder?.uri || subfolder.uri
-      if (subfolderUri) {
-        const subfolderId = subfolderUri.split('/').pop()
-
-        // First check if subfolder has any videos
-        const checkUrl = `https://api.vimeo.com/me/projects/${subfolderId}/videos?per_page=1`
-        const checkRes = await vimeoFetch(checkUrl, {
-          headers: {
-            Authorization: `Bearer ${vimeoAccessToken}`,
-          },
-        })
-        const checkData = await checkRes.json()
-
-        // Only process subfolders that contain videos or have subfolders
-        if (checkData.total > 0) {
-          console.log(
-            `${indent}Processing subfolder: ${subfolder.folder?.name || subfolder.name || subfolderId}`
-          )
-          await fetchVideosFromFolderTree(subfolderId, depth + 1)
-        } else {
-          console.log(
-            `${indent}Skipping empty subfolder: ${subfolder.folder?.name || subfolder.name || subfolderId}`
-          )
-        }
-      }
-    }
-  }
 
   const handleSyncFinished = useCallback(
     (entryCount) => {
@@ -352,7 +202,7 @@ export const VimeoSyncView = (options) => {
         handleSyncFinished(videosEntry.length)
       }
     } catch (error) {
-      console.error('Update failed: ', error.message)
+      console.error(t('sync.error-update', { message: error.message }))
       setStatus({ type: 'error', message: error.message })
     }
   }
@@ -373,9 +223,7 @@ export const VimeoSyncView = (options) => {
         return
       }
 
-      console.log(
-        `Removing ${documentsToDelete.length} documents no longer in Vimeo import`
-      )
+      console.log(t('sync.log-removing', { count: documentsToDelete.length }))
 
       // Try individual deletion to handle reference constraints gracefully
       let successCount = 0
@@ -389,12 +237,12 @@ export const VimeoSyncView = (options) => {
             e.message &&
             e.message.includes('cannot be deleted as there are references')
           ) {
-            console.warn(
-              `Cannot delete ${document._id}: still referenced by other documents`
-            )
+            console.warn(t('sync.warn-referenced', { id: document._id }))
             inexistent.push(document._id)
           } else {
-            console.error(`Failed to delete ${document._id}:`, e.message)
+            console.error(
+              t('sync.error-delete', { id: document._id, message: e.message })
+            )
             inexistent.push(document._id)
           }
         }
@@ -402,13 +250,16 @@ export const VimeoSyncView = (options) => {
 
       if (successCount > 0) {
         console.log(
-          `Successfully removed ${successCount} of ${documentsToDelete.length} obsolete documents`
+          t('sync.log-removed', {
+            success: successCount,
+            total: documentsToDelete.length,
+          })
         )
       }
 
       setInexistent(inexistent)
     } catch (error) {
-      console.error('Error cleaning up obsolete documents:', error)
+      console.error(t('sync.error-cleanup'))
     }
   }
 
@@ -417,35 +268,18 @@ export const VimeoSyncView = (options) => {
     setVideosEntry([])
     setLogs([])
     try {
-      if (vimeoFolderId) {
-        // First, count total videos in folder tree
-        console.log(
-          `Counting videos in folder ${vimeoFolderId} and subfolders...`
-        )
-        const totalCount = await countVideosInFolderTree(vimeoFolderId)
-        setCount(totalCount)
-        setCountPages(Math.ceil(totalCount / 100))
-        console.log(`Total videos to sync: ${totalCount}`)
-
-        // Fetch videos from folder and all its subfolders recursively
-        console.log(`Starting recursive sync from folder ${vimeoFolderId}...`)
-        await fetchVideosFromFolderTree(vimeoFolderId)
-        await deleteIncompatibleVimeoDocuments(videosEntry)
-        handleSyncFinished(videosEntry.length)
-      } else {
-        // Fetch all user videos (not folder-specific)
-        const res = await vimeoFetch(vimeoFetchUrl, {
-          headers: {
-            Authorization: `Bearer ${vimeoAccessToken}`,
-          },
-        })
-        const data = await res.json()
-        setCount(data.total)
-        setCountPages(Math.ceil(data.total / data.per_page))
-        await importVimeo(data.paging.first)
-      }
+      const res = await vimeoFetch(vimeoFetchUrl, {
+        headers: {
+          Authorization: `Bearer ${vimeoAccessToken}`,
+        },
+      })
+      const data = await res.json()
+      setCount(data.total)
+      setCountPages(Math.ceil(data.total / data.per_page))
+      console.log(t('sync.log-total', { count: data.total }))
+      await importVimeo(data.paging.first)
     } catch (error) {
-      console.error('Fetch Vimeo failed: ', error.message)
+      console.error(t('sync.error-fetch', { message: error.message }))
       setStatus({ type: 'error', message: error.message })
       setCurrentVideo(0)
     }

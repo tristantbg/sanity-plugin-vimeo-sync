@@ -81,8 +81,7 @@ const vimeoSyncLocaleStrings = {
   'sync.progress': 'Processing {{current}} of {{total}}',
 
   /** Sync complete message. {{count}} = number synced, {{time}} = timestamp */
-  'sync.finished':
-    'Finished syncing {{count}} videos at {{time}}',
+  'sync.finished': 'Finished syncing {{count}} videos at {{time}}',
 
   /** Generic error prefix */
   'sync.error-prefix': 'Error: ',
@@ -90,6 +89,36 @@ const vimeoSyncLocaleStrings = {
   /** Error when video files are missing from the API response */
   'sync.error-missing-files':
     'Missing video files. Ensure your token has the "video_files" scope and your Vimeo account is on a PRO plan or higher.',
+
+  /** Error when access token is not set */
+  'sync.error-missing-token':
+    'Vimeo access token is not set. Open the Vimeo Sync tool and click "Show/Edit Access Token" to configure it.',
+
+  /** Error when update fails. {{message}} = error details */
+  'sync.error-update': 'Update failed: {{message}}',
+
+  /** Error when fetch fails. {{message}} = error details */
+  'sync.error-fetch': 'Fetch Vimeo failed: {{message}}',
+
+  /** Error cleaning up obsolete documents */
+  'sync.error-cleanup': 'Error cleaning up obsolete documents',
+
+  /** Error deleting a specific document. {{id}} = document ID, {{message}} = error details */
+  'sync.error-delete': 'Failed to delete {{id}}: {{message}}',
+
+  /** Warning when document cannot be deleted due to references. {{id}} = document ID */
+  'sync.warn-referenced':
+    'Cannot delete {{id}}: still referenced by other documents',
+
+  /** Log: total videos to sync. {{count}} = total */
+  'sync.log-total': 'Total videos to sync: {{count}}',
+
+  /** Log: removing obsolete documents. {{count}} = number to remove */
+  'sync.log-removing': 'Removing {{count}} documents no longer in Vimeo import',
+
+  /** Log: successfully removed obsolete documents. {{success}} / {{total}} */
+  'sync.log-removed':
+    'Successfully removed {{success}} of {{total}} obsolete documents',
 
   /* -------------------------------------------------- */
   /*  Inexistent / orphaned documents warning           */
