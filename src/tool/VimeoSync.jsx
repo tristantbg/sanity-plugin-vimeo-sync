@@ -160,8 +160,24 @@ export const VimeoSyncView = (options) => {
         const subfolderUri = subfolder.folder?.uri || subfolder.uri
         if (subfolderUri) {
           const subfolderId = subfolderUri.split('/').pop()
-          const subCount = await countVideosInFolderTree(subfolderId, depth + 1)
-          totalCount += subCount
+
+          // First check if subfolder has any videos
+          const checkUrl = `https://api.vimeo.com/me/projects/${subfolderId}/videos?per_page=1`
+          const checkRes = await vimeoFetch(checkUrl, {
+            headers: {
+              Authorization: `Bearer ${vimeoAccessToken}`,
+            },
+          })
+          const checkData = await checkRes.json()
+
+          // Only process subfolders that contain videos
+          if (checkData.total > 0) {
+            const subCount = await countVideosInFolderTree(
+              subfolderId,
+              depth + 1
+            )
+            totalCount += subCount
+          }
         }
       }
 
@@ -204,10 +220,27 @@ export const VimeoSyncView = (options) => {
       const subfolderUri = subfolder.folder?.uri || subfolder.uri
       if (subfolderUri) {
         const subfolderId = subfolderUri.split('/').pop()
-        console.log(
-          `${indent}Processing subfolder: ${subfolder.folder?.name || subfolder.name || subfolderId}`
-        )
-        await fetchVideosFromFolderTree(subfolderId, depth + 1)
+
+        // First check if subfolder has any videos
+        const checkUrl = `https://api.vimeo.com/me/projects/${subfolderId}/videos?per_page=1`
+        const checkRes = await vimeoFetch(checkUrl, {
+          headers: {
+            Authorization: `Bearer ${vimeoAccessToken}`,
+          },
+        })
+        const checkData = await checkRes.json()
+
+        // Only process subfolders that contain videos or have subfolders
+        if (checkData.total > 0) {
+          console.log(
+            `${indent}Processing subfolder: ${subfolder.folder?.name || subfolder.name || subfolderId}`
+          )
+          await fetchVideosFromFolderTree(subfolderId, depth + 1)
+        } else {
+          console.log(
+            `${indent}Skipping empty subfolder: ${subfolder.folder?.name || subfolder.name || subfolderId}`
+          )
+        }
       }
     }
   }

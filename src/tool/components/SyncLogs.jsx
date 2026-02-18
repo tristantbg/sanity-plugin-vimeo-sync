@@ -2,11 +2,11 @@ import { Box, Card, Code, Flex, Text } from '@sanity/ui'
 import { useEffect, useRef } from 'react'
 
 export function SyncLogs({ logs }) {
-  const endRef = useRef(null)
+  const containerRef = useRef(null)
 
   useEffect(() => {
-    if (endRef.current) {
-      endRef.current.scrollIntoView({ behavior: 'smooth' })
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight
     }
   }, [logs])
 
@@ -37,19 +37,16 @@ export function SyncLogs({ logs }) {
           fontFamily: 'monospace',
           fontSize: '12px',
         }}
+        ref={containerRef}
       >
         <Flex direction="column" gap={2}>
           {logs.map((log, index) => (
             <Box key={index}>
-              <Text size={1} style={{ color: 'var(--card-muted-fg-color)' }}>
-                [{log.timestamp}]
-              </Text>{' '}
               <Text size={1} tone={getLogColor(log.type)}>
                 {log.message}
               </Text>
             </Box>
           ))}
-          <div ref={endRef} />
         </Flex>
       </Card>
     </Card>

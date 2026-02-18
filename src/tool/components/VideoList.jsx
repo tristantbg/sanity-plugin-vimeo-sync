@@ -50,7 +50,7 @@ export function VideoList() {
       : t('video-list.count_other', { count: filteredDocs.length })
 
   return (
-    <Flex paddingX={3}>
+    <Flex padding={3} style={{ maxHeight: '300px', overflowY: 'auto' }}>
       <Stack space={3} style={{ width: '100%' }}>
         <Flex align="center" gap={3}>
           <Box style={{ flex: 1 }}>
