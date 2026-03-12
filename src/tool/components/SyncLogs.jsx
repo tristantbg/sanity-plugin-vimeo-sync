@@ -1,4 +1,4 @@
-import { Box, Card, Code, Flex, Text } from '@sanity/ui'
+import { Card, Flex, Text } from '@sanity/ui'
 import { useEffect, useRef } from 'react'
 
 export function SyncLogs({ logs }) {
@@ -41,11 +41,9 @@ export function SyncLogs({ logs }) {
       >
         <Flex direction="column" gap={2}>
           {logs.map((log, index) => (
-            <Box key={index}>
-              <Text size={1} tone={getLogColor(log.type)}>
-                {log.message}
-              </Text>
-            </Box>
+            <Card key={index} tone={getLogColor(log.type)}>
+              <Text size={1}>{log.message}</Text>
+            </Card>
           ))}
         </Flex>
       </Card>

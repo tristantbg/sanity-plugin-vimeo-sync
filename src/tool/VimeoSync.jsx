@@ -1,6 +1,6 @@
 import { useSecrets } from '@sanity/studio-secrets'
 import { Box, Card, Flex, Spinner, Text } from '@sanity/ui'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSource, useTranslation } from 'sanity'
 import { namespace } from '../constants'
 import { addKeys, setPluginConfig, vimeoFetch } from '../helpers'
@@ -45,7 +45,10 @@ export const VimeoSyncView = (options) => {
   const client = getClient({ apiVersion: '2025-02-07' })
   const vimeoFolderId = folderId || process.env.SANITY_STUDIO_VIMEO_FOLDER_ID
 
-  // Capture console logs
+  // Capture console logs - use refs to avoid setState during render
+  const pendingLogsRef = useRef([])
+  const flushTimeoutRef = useRef(null)
+
   useEffect(() => {
     const originalLog = console.log
     const originalWarn = console.warn
@@ -64,7 +67,19 @@ export const VimeoSyncView = (options) => {
         second: '2-digit',
       })
 
-      setLogs((prev) => [...prev, { type, message, timestamp }])
+      pendingLogsRef.current.push({ type, message, timestamp })
+
+      // Batch updates to avoid setState during render
+      if (!flushTimeoutRef.current) {
+        flushTimeoutRef.current = setTimeout(() => {
+          flushTimeoutRef.current = null
+          if (pendingLogsRef.current.length > 0) {
+            const newLogs = [...pendingLogsRef.current]
+            pendingLogsRef.current = []
+            setLogs((prev) => [...prev, ...newLogs])
+          }
+        }, 0)
+      }
     }
 
     console.log = (...args) => {
@@ -86,6 +101,9 @@ export const VimeoSyncView = (options) => {
       console.log = originalLog
       console.warn = originalWarn
       console.error = originalError
+      if (flushTimeoutRef.current) {
+        clearTimeout(flushTimeoutRef.current)
+      }
     }
   }, [])
 
