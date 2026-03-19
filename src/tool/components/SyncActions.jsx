@@ -3,19 +3,28 @@ import { Button, Card, Flex, Spinner, Text } from '@sanity/ui'
 import { useTranslation } from 'sanity'
 import { vimeoSyncLocaleNamespace } from '../../i18n'
 
-export function SyncActions({ status, onSync, disabled }) {
+export function SyncActions({ status, onSync, onSyncNew, disabled }) {
   const { t } = useTranslation(vimeoSyncLocaleNamespace)
 
   return (
     <Flex gap={3}>
       {status.type !== 'loading' ? (
-        <Button
-          icon={SyncIcon}
-          mode="ghost"
-          text={t('sync.button-label')}
-          onClick={onSync}
-          disabled={disabled}
-        />
+        <>
+          <Button
+            icon={SyncIcon}
+            mode="ghost"
+            text={t('sync.button-label')}
+            onClick={onSync}
+            disabled={disabled}
+          />
+          <Button
+            icon={SyncIcon}
+            mode="ghost"
+            text={t('sync.button-label-new')}
+            onClick={onSyncNew}
+            disabled={disabled}
+          />
+        </>
       ) : (
         <Card tone="neutral" padding={3}>
           <Flex align={'center'} gap={3}>
@@ -39,9 +48,7 @@ export function SyncActions({ status, onSync, disabled }) {
               {status.message}
             </Text>
           )}
-          {status.type === 'finished' && (
-            <Text size={1}>{status.message}</Text>
-          )}
+          {status.type === 'finished' && <Text size={1}>{status.message}</Text>}
         </Card>
       )}
     </Flex>

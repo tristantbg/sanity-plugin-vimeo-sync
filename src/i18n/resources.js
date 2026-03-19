@@ -69,7 +69,10 @@ const vimeoSyncLocaleStrings = {
   /* -------------------------------------------------- */
 
   /** Label on the sync button */
-  'sync.button-label': 'Load Vimeo videos',
+  'sync.button-label': 'Sync All',
+
+  /** Label on the sync-new-only button */
+  'sync.button-label-new': 'Sync New Only',
 
   /** Shown while syncing */
   'sync.loading': 'Loading...',
@@ -112,6 +115,12 @@ const vimeoSyncLocaleStrings = {
 
   /** Log: total videos to sync. {{count}} = total */
   'sync.log-total': 'Total videos to sync: {{count}}',
+
+  /** Log: new-only sync found N new videos. {{count}} = new, {{total}} = total */
+  'sync.log-new-found': 'Found {{count}} new videos out of {{total}} total',
+
+  /** Log: skipping already-imported videos. {{count}} = skipped */
+  'sync.log-new-skipped': 'Skipping {{count}} already imported videos',
 
   /** Log: removing obsolete documents. {{count}} = number to remove */
   'sync.log-removing': 'Removing {{count}} documents no longer in Vimeo import',

@@ -29,7 +29,7 @@ export function SyncLogs({ logs }) {
     <Card paddingX={3} paddingBottom={3}>
       <Card
         padding={3}
-        tone="transparent"
+        tone={getLogColor(log.type)}
         border
         style={{
           maxHeight: '300px',
@@ -41,7 +41,7 @@ export function SyncLogs({ logs }) {
       >
         <Flex direction="column" gap={2}>
           {logs.map((log, index) => (
-            <Card key={index} tone={getLogColor(log.type)}>
+            <Card key={index}>
               <Text size={1}>{log.message}</Text>
             </Card>
           ))}

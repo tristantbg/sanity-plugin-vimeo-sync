@@ -129,7 +129,7 @@ export const VimeoSyncView = (options) => {
     [t]
   )
 
-  async function importVimeo(url) {
+  async function importVimeo(url, existingIds = null) {
     let nextPage
     let perPage
     let page
@@ -146,7 +146,12 @@ export const VimeoSyncView = (options) => {
       perPage = apiResponse.per_page
 
       const transaction = client.transaction()
-      const videos = apiResponse.data
+      const allVideos = apiResponse.data
+      const videos = existingIds
+        ? allVideos.filter(
+            (v) => !existingIds.has(`vimeo-${v.uri.split('/').pop()}`)
+          )
+        : allVideos
 
       const BATCH_SIZE = 5
       for (let i = 0; i < videos.length; i += BATCH_SIZE) {
@@ -214,9 +219,11 @@ export const VimeoSyncView = (options) => {
 
       await transaction.commit()
       if (nextPage) {
-        await importVimeo(nextPage)
+        await importVimeo(nextPage, existingIds)
       } else {
-        await deleteIncompatibleVimeoDocuments(videosEntry)
+        if (!existingIds) {
+          await deleteIncompatibleVimeoDocuments(videosEntry)
+        }
         handleSyncFinished(videosEntry.length)
       }
     } catch (error) {
@@ -303,6 +310,40 @@ export const VimeoSyncView = (options) => {
     }
   }
 
+  async function fetchVimeoNew() {
+    setStatus({ type: 'loading' })
+    setVideosEntry([])
+    setLogs([])
+    try {
+      const existingDocs = await client.fetch('*[_type == "vimeo"] {_id}')
+      const existingIds = new Set(existingDocs.map((d) => d._id))
+
+      const res = await vimeoFetch(vimeoFetchUrl, {
+        headers: {
+          Authorization: `Bearer ${vimeoAccessToken}`,
+        },
+      })
+      const data = await res.json()
+      setCount(data.total)
+      setCountPages(Math.ceil(data.total / data.per_page))
+      const newCount = data.total - existingIds.size
+      console.log(
+        t('sync.log-new-found', {
+          count: Math.max(0, newCount),
+          total: data.total,
+        })
+      )
+      if (existingIds.size > 0) {
+        console.log(t('sync.log-new-skipped', { count: existingIds.size }))
+      }
+      await importVimeo(data.paging.first, existingIds)
+    } catch (error) {
+      console.error(t('sync.error-fetch', { message: error.message }))
+      setStatus({ type: 'error', message: error.message })
+      setCurrentVideo(0)
+    }
+  }
+
   if (loading) {
     return (
       <Card padding={4} tone="default">
@@ -342,6 +383,7 @@ export const VimeoSyncView = (options) => {
           <SyncActions
             status={status}
             onSync={fetchVimeo}
+            onSyncNew={fetchVimeoNew}
             disabled={!vimeoAccessToken}
           />
 
