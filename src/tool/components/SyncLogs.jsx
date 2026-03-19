@@ -29,7 +29,7 @@ export function SyncLogs({ logs }) {
     <Card paddingX={3} paddingBottom={3}>
       <Card
         padding={3}
-        tone={getLogColor(log.type)}
+        tone="default"
         border
         style={{
           maxHeight: '300px',
