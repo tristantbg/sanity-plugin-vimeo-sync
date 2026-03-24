@@ -23,12 +23,14 @@ export default defineField({
       title: 'Start Time',
       description: 'Start time in seconds',
       validation: (Rule) =>
-        Rule.min(0).custom((value, context) => {
-          if (value + context.parent.duration > context.document?.duration) {
-            return 'Start time exceeds video length'
-          }
-          return true
-        }),
+        Rule.min(0)
+          .integer()
+          .custom((value, context) => {
+            if (value + context.parent.duration > context.document?.duration) {
+              return 'Start time exceeds video length'
+            }
+            return true
+          }),
       initialValue: 0,
     },
     {
@@ -39,6 +41,7 @@ export default defineField({
       validation: (Rule) =>
         Rule.min(0)
           .max(6)
+          .integer()
           .custom((value, context, e) => {
             if (context.parent.startTime + value > context.document?.duration) {
               return 'Duration exceeds video length'
