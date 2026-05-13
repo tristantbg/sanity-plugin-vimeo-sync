@@ -3,7 +3,6 @@ import { ps } from './messages'
 import {
   createSetOfAnimatedThumbnails,
   deleteExistingVideoThumbnails,
-  getAnimatedThumbset,
   getExistingVideoThumbnails,
 } from './utils'
 
@@ -55,37 +54,65 @@ export const useAnimatedThumbs = (uri, field) => {
     }
   }, [])
 
-  const pollThumbset = useCallback(async (thumbsetUri) => {
-    const startedAt = Date.now()
-    let tries = 0
+  // Poll using the list endpoint — Vimeo's single-thumbset GET often returns
+  // 404 ("The animated thumbset wasn't found.") for a short window after the
+  // POST that created it. The list endpoint is consistent immediately.
+  const pollThumbset = useCallback(
+    async (thumbsetUri) => {
+      const startedAt = Date.now()
+      let tries = 0
+      let missingCycles = 0
 
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      if (cancelRef.current) {
-        throw new Error('Cancelled')
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        if (cancelRef.current) {
+          throw new Error('Cancelled')
+        }
+        tries += 1
+        setAttempt(tries)
+
+        const list = await getExistingVideoThumbnails(uri)
+        let data = null
+        if (list?.length) {
+          data =
+            (thumbsetUri && list.find((t) => t?.uri === thumbsetUri)) || null
+          if (!data) {
+            // Fallback: newest thumbset by created_on
+            data = [...list].sort(
+              (a, b) => (b?.created_on || 0) - (a?.created_on || 0)
+            )[0]
+          }
+        }
+
+        if (data) {
+          missingCycles = 0
+          if (isCompleted(data)) return data
+          if (isFailed(data)) {
+            throw new Error(
+              'Vimeo failed to generate this animated thumbnail. Try a different start time or duration.'
+            )
+          }
+        } else {
+          missingCycles += 1
+          if (missingCycles > 5) {
+            throw new Error(
+              "The thumbnail set is no longer listed on Vimeo. It may have been deleted — refresh and try again."
+            )
+          }
+        }
+
+        if (Date.now() - startedAt > TIMEOUT_MS) {
+          throw new Error(
+            `Generation timed out after ${Math.round(TIMEOUT_MS / 60000)} minutes. Vimeo may still be processing — reopen this document in a few minutes.`
+          )
+        }
+
+        setStatus(ps('loading', tries))
+        await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS))
       }
-      tries += 1
-      setAttempt(tries)
-
-      const data = await getAnimatedThumbset(thumbsetUri)
-
-      if (isCompleted(data)) return data
-      if (isFailed(data)) {
-        throw new Error(
-          'Vimeo failed to generate this animated thumbnail. Try a different start time or duration.'
-        )
-      }
-
-      if (Date.now() - startedAt > TIMEOUT_MS) {
-        throw new Error(
-          `Generation timed out after ${Math.round(TIMEOUT_MS / 60000)} minutes. Vimeo may still be processing — reopen this document in a few minutes.`
-        )
-      }
-
-      setStatus(ps('loading', tries))
-      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS))
-    }
-  }, [])
+    },
+    [uri]
+  )
 
   // Polls any pending thumbset on Vimeo, then returns the final list.
   const drainPending = useCallback(async () => {

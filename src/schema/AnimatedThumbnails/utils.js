@@ -49,21 +49,6 @@ export const getExistingVideoThumbnails = async (uri) => {
   return
 }
 
-export const getAnimatedThumbset = async (thumbsetUri) => {
-  if (!thumbsetUri) throw new Error('No thumbset URI provided')
-
-  const res = await vimeoFetch(`https://api.vimeo.com${thumbsetUri}`, {
-    method: 'GET',
-    headers: authHeaders(),
-  })
-
-  const data = await res.json()
-  if (!res.ok) {
-    throw new Error(extractError(data, `Vimeo error (${res.status})`))
-  }
-  return data
-}
-
 export const deleteExistingVideoThumbnails = async (thumb) => {
   const thumbsetUri = thumb?.uri
   if (!thumbsetUri) {
