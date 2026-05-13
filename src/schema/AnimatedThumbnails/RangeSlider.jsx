@@ -132,11 +132,18 @@ export function RangeSlider({
   const handleEndInput = useCallback(
     (e) => {
       let newEnd = Number(e.target.value)
-      if (newEnd < start + MIN_DURATION) newEnd = start + MIN_DURATION
+      if (newEnd < MIN_DURATION) newEnd = MIN_DURATION
       if (videoDuration && newEnd > videoDuration) newEnd = videoDuration
-      let newDur = newEnd - start
-      if (newDur > MAX_DURATION) newDur = MAX_DURATION
-      commit(start, newDur)
+      let newStart = start
+      let newDur = newEnd - newStart
+      if (newDur > MAX_DURATION) {
+        // Slide the window: keep duration at MAX, drag start along with end
+        newStart = newEnd - MAX_DURATION
+        newDur = MAX_DURATION
+      } else if (newDur < MIN_DURATION) {
+        newDur = MIN_DURATION
+      }
+      commit(newStart, newDur)
     },
     [start, videoDuration, commit]
   )

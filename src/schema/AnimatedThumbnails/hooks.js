@@ -10,18 +10,23 @@ import {
 const POLL_INTERVAL_MS = 8 * 1000
 const TIMEOUT_MS = 6 * 60 * 1000
 
+const isCompleted = (t) => t?.status === 'completed'
+const isFailed = (t) => t?.status === 'failed' || t?.status === 'error'
+const isPending = (t) => t?.status && !isCompleted(t) && !isFailed(t)
+
 export const useAnimatedThumbs = (uri, field) => {
-  const hasThumbnails =
-    field?.thumbnails?.length && field?.thumbnails?.[0]?.status === 'completed'
+  const startThumbs = field?.thumbnails || []
+  const allCompleted =
+    startThumbs.length > 0 && startThumbs.every(isCompleted)
 
   const [status, setStatus] = useState(
-    hasThumbnails
+    allCompleted
       ? ps('already-generated')
       : { type: 'idle', message: undefined }
   )
   const [attempt, setAttempt] = useState(0)
   const [elapsed, setElapsed] = useState(0)
-  const [items, setItems] = useState(hasThumbnails ? field.thumbnails : [])
+  const [items, setItems] = useState(startThumbs)
 
   const cancelRef = useRef(false)
   const startedAtRef = useRef(0)
@@ -54,6 +59,7 @@ export const useAnimatedThumbs = (uri, field) => {
     const startedAt = Date.now()
     let tries = 0
 
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       if (cancelRef.current) {
         throw new Error('Cancelled')
@@ -63,8 +69,8 @@ export const useAnimatedThumbs = (uri, field) => {
 
       const data = await getAnimatedThumbset(thumbsetUri)
 
-      if (data?.status === 'completed') return data
-      if (data?.status === 'failed' || data?.status === 'error') {
+      if (isCompleted(data)) return data
+      if (isFailed(data)) {
         throw new Error(
           'Vimeo failed to generate this animated thumbnail. Try a different start time or duration.'
         )
@@ -81,6 +87,69 @@ export const useAnimatedThumbs = (uri, field) => {
     }
   }, [])
 
+  // Polls any pending thumbset on Vimeo, then returns the final list.
+  const drainPending = useCallback(async () => {
+    const existing = await getExistingVideoThumbnails(uri)
+    if (!existing?.length) return null
+
+    const inProgress = existing.find(isPending)
+    if (inProgress?.uri) {
+      await pollThumbset(inProgress.uri)
+      return await getExistingVideoThumbnails(uri)
+    }
+    return existing
+  }, [uri, pollThumbset])
+
+  // Reconnects to any in-progress Vimeo thumbset and resolves it to completion.
+  // Returns the final items if successful, null if nothing to resume, throws on error.
+  const resumeFromVimeo = useCallback(async () => {
+    cancelRef.current = false
+    setAttempt(0)
+    setStatus(ps('loading', 0))
+    startTicker()
+
+    try {
+      if (!uri) {
+        throw new Error('This Vimeo document has no URI — re-sync it first.')
+      }
+
+      const finalItems = await drainPending()
+
+      if (!finalItems?.length) {
+        setStatus({ type: 'idle', message: undefined })
+        return null
+      }
+
+      setItems(finalItems)
+
+      if (finalItems.every(isCompleted)) {
+        setStatus(ps('success'))
+        return finalItems
+      }
+
+      if (finalItems.some(isFailed)) {
+        setStatus({
+          type: 'error',
+          message:
+            'Vimeo reported a failed thumbnail in this set. Delete it and regenerate.',
+        })
+      } else {
+        setStatus({ type: 'idle', message: undefined })
+      }
+      return finalItems
+    } catch (e) {
+      if (e?.message === 'Cancelled') {
+        setStatus({ type: 'idle', message: undefined })
+        return null
+      }
+      console.error('Error resuming animated thumbnails', e)
+      setStatus({ type: 'error', message: e.message })
+      return null
+    } finally {
+      stopTicker()
+    }
+  }, [uri, drainPending, startTicker, stopTicker])
+
   const generateThumbs = useCallback(
     async (startTime, duration) => {
       cancelRef.current = false
@@ -95,8 +164,44 @@ export const useAnimatedThumbs = (uri, field) => {
 
         const existing = await getExistingVideoThumbnails(uri)
         if (existing?.length) {
-          setStatus(ps('already-generated'))
+          // Orphan recovery: if Vimeo has thumbnails (possibly still in
+          // progress) that weren't fully saved to Sanity, drain them instead
+          // of starting a new generation.
+          const inProgress = existing.find(isPending)
+          if (inProgress?.uri) {
+            await pollThumbset(inProgress.uri)
+            const finalItems = await getExistingVideoThumbnails(uri)
+            if (finalItems?.length && finalItems.every(isCompleted)) {
+              setStatus(ps('success'))
+              setItems(finalItems)
+              return finalItems
+            }
+            if (finalItems?.some(isFailed)) {
+              setItems(finalItems)
+              setStatus({
+                type: 'error',
+                message:
+                  'A thumbnail in the existing set failed. Delete it and try again.',
+              })
+              return finalItems
+            }
+            setItems(finalItems || [])
+            return finalItems
+          }
+
+          if (existing.every(isCompleted)) {
+            setStatus(ps('already-generated'))
+            setItems(existing)
+            return existing
+          }
+
+          // Has failed items but no in-progress — surface and let the user delete
           setItems(existing)
+          setStatus({
+            type: 'error',
+            message:
+              'Existing thumbnails are in a failed state. Delete them and try again.',
+          })
           return existing
         }
 
@@ -147,7 +252,17 @@ export const useAnimatedThumbs = (uri, field) => {
   const deleteThumbs = useCallback(async () => {
     try {
       setStatus(ps('loading', null, 'delete'))
-      for (const item of items) {
+
+      // Always reconcile with Vimeo so orphans are cleaned up too
+      let toDelete = items
+      try {
+        const fromVimeo = await getExistingVideoThumbnails(uri)
+        if (fromVimeo?.length) toDelete = fromVimeo
+      } catch (e) {
+        // Fall back to local items if Vimeo lookup fails
+      }
+
+      for (const item of toDelete) {
         await deleteExistingVideoThumbnails(item)
       }
       setStatus(ps('success', null, 'delete'))
@@ -155,7 +270,7 @@ export const useAnimatedThumbs = (uri, field) => {
     } catch (e) {
       setStatus({ type: 'error', message: e.message })
     }
-  }, [items])
+  }, [items, uri])
 
   const reset = useCallback(() => {
     setStatus({ type: 'idle', message: undefined })
@@ -172,5 +287,6 @@ export const useAnimatedThumbs = (uri, field) => {
     deleteThumbs,
     cancel,
     reset,
+    resumeFromVimeo,
   }
 }

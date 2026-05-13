@@ -17,7 +17,7 @@ import {
   TabPanel,
   Text,
 } from '@sanity/ui'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { MemberField, set, unset, useClient, useFormValue } from 'sanity'
 import { namespace } from '../../constants'
 import { setPluginConfig } from '../../helpers'
@@ -130,6 +130,7 @@ export function input(props) {
     generateThumbs,
     deleteThumbs,
     cancel,
+    resumeFromVimeo,
   } = useAnimatedThumbs(videoUri, value)
 
   const isBusy =
@@ -159,29 +160,58 @@ export function input(props) {
     [onChange]
   )
 
+  const persistItems = useCallback(
+    (resolvedItems) => {
+      if (!resolvedItems?.length) return
+      const itemsWithKeys = resolvedItems.map((item, idx) => ({
+        ...item,
+        _key: `thumb-${(item.uri || item.clip_uri || `${idx}`).replace(/\W+/g, '-')}`,
+        sizes: (item.sizes || []).map((size, sidx) => ({
+          ...size,
+          _key: `size-${size.width || sidx}`,
+        })),
+      }))
+
+      const t = itemsWithKeys[0]?.sizes?.[0]?.start_time
+      const d = itemsWithKeys[0]?.sizes?.[0]?.duration
+
+      const patches = [set(itemsWithKeys, ['thumbnails'])]
+      if (typeof t === 'number') patches.push(set(t, ['startTime']))
+      if (typeof d === 'number') patches.push(set(d, ['duration']))
+      onChange(patches)
+    },
+    [onChange]
+  )
+
   const handleGenerate = useCallback(async () => {
     onChange(unset(['thumbnails']))
-
     const generatedItems = await generateThumbs(startTime, duration)
-    if (!generatedItems) return
+    persistItems(generatedItems)
+  }, [generateThumbs, startTime, duration, onChange, persistItems])
 
-    const itemsWithKeys = generatedItems.map((item) => ({
-      ...item,
-      _key: `thumb-${item.clip_uri}`,
-      sizes: item.sizes.map((size) => ({
-        ...size,
-        _key: `size-${size.width}`,
-      })),
-    }))
-
-    const t = itemsWithKeys[0]?.sizes?.[0]?.start_time
-    const d = itemsWithKeys[0]?.sizes?.[0]?.duration
-
-    const patches = [set(itemsWithKeys, ['thumbnails'])]
-    if (typeof t === 'number') patches.push(set(t, ['startTime']))
-    if (typeof d === 'number') patches.push(set(d, ['duration']))
-    onChange(patches)
-  }, [generateThumbs, startTime, duration, onChange])
+  // Auto-resume: if Sanity has thumbnails that are not yet completed (a previous
+  // generation was saved partially), reconnect to Vimeo and finish the job so
+  // the user is never stuck on a non-deletable in-progress state.
+  const didTryResumeRef = useRef(false)
+  useEffect(() => {
+    if (didTryResumeRef.current) return
+    if (!videoUri) return
+    const thumbs = value?.thumbnails
+    if (!thumbs?.length) return
+    const hasPending = thumbs.some(
+      (t) =>
+        t?.status &&
+        t.status !== 'completed' &&
+        t.status !== 'failed' &&
+        t.status !== 'error'
+    )
+    if (!hasPending) return
+    didTryResumeRef.current = true
+    ;(async () => {
+      const resolved = await resumeFromVimeo()
+      if (resolved?.length) persistItems(resolved)
+    })()
+  }, [value?.thumbnails, videoUri, resumeFromVimeo, persistItems])
 
   const handleDelete = useCallback(async () => {
     await deleteThumbs()
@@ -199,9 +229,10 @@ export function input(props) {
     return sorted[0]?.link || null
   }, [items])
 
-  const hasThumbnails =
-    existingThumbnails?.length > 0 &&
-    existingThumbnails?.[0]?.status === 'completed'
+  const hasThumbnails = existingThumbnails?.length > 0
+  const allCompleted =
+    hasThumbnails &&
+    existingThumbnails.every((t) => t?.status === 'completed')
 
   // Estimate generation progress: typical Vimeo build is ~2 minutes
   const estimatedProgress = Math.min(
