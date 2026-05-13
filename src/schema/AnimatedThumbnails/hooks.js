@@ -1,110 +1,176 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ps } from './messages'
 import {
   createSetOfAnimatedThumbnails,
   deleteExistingVideoThumbnails,
+  getAnimatedThumbset,
   getExistingVideoThumbnails,
 } from './utils'
+
+const POLL_INTERVAL_MS = 8 * 1000
+const TIMEOUT_MS = 6 * 60 * 1000
 
 export const useAnimatedThumbs = (uri, field) => {
   const hasThumbnails =
     field?.thumbnails?.length && field?.thumbnails?.[0]?.status === 'completed'
+
   const [status, setStatus] = useState(
     hasThumbnails
-      ? { type: 'already-generated' }
+      ? ps('already-generated')
       : { type: 'idle', message: undefined }
   )
   const [attempt, setAttempt] = useState(0)
+  const [elapsed, setElapsed] = useState(0)
   const [items, setItems] = useState(hasThumbnails ? field.thumbnails : [])
-  const checkStatus = async (opts) => {
-    const defaultOpts = {
-      startTime: Date.now(),
-      loop: true,
-      timeout: 5 * 60 * 1000, // 5 * 60 * 1000 5 minutes
-      pollInterval: 1 * 60 * 1000, // 1 * 60 * 1000 1 minute
+
+  const cancelRef = useRef(false)
+  const startedAtRef = useRef(0)
+  const tickerRef = useRef(null)
+
+  useEffect(() => {
+    return () => {
+      cancelRef.current = true
+      if (tickerRef.current) clearInterval(tickerRef.current)
     }
+  }, [])
 
-    const options = { ...defaultOpts, ...opts }
-    const { startTime, loop, timeout, pollInterval } = options
+  const startTicker = useCallback(() => {
+    if (tickerRef.current) clearInterval(tickerRef.current)
+    startedAtRef.current = Date.now()
+    setElapsed(0)
+    tickerRef.current = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startedAtRef.current) / 1000))
+    }, 1000)
+  }, [])
 
-    if (timeout < pollInterval) {
-      throw new Error('Poll interval is greater than timeout')
+  const stopTicker = useCallback(() => {
+    if (tickerRef.current) {
+      clearInterval(tickerRef.current)
+      tickerRef.current = null
     }
+  }, [])
 
-    const updatedThumbnails = await getExistingVideoThumbnails(uri)
-    const status = updatedThumbnails?.[0]?.status
+  const pollThumbset = useCallback(async (thumbsetUri) => {
+    const startedAt = Date.now()
+    let tries = 0
 
-    if (status === 'completed') {
-      console.log('Animated thumbnails generation completed for video:', uri)
-      return updatedThumbnails
-    } else if (Date.now() - startTime > timeout) {
-      throw new Error(
-        `Timeout: Animated thumbnails generation took longer than ${timeout / pollInterval} minutes for video:`,
-        uri
-      )
-    } else if (loop) {
-      console.log(
-        'Waiting for animated thumbnails generation to complete for video'
-      )
-      setAttempt((prev) => {
-        const curr = prev + 1
-        setStatus(ps('loading', curr))
-        return curr
-      })
+    while (true) {
+      if (cancelRef.current) {
+        throw new Error('Cancelled')
+      }
+      tries += 1
+      setAttempt(tries)
 
-      await new Promise((resolve) => setTimeout(resolve, pollInterval)) // wait for 1 minute
-      return await checkStatus({ startTime })
-    }
-  }
+      const data = await getAnimatedThumbset(thumbsetUri)
 
-  const generateThumbs = async (startTime, duration) => {
-    setAttempt(0)
-    setStatus(ps('loading', attempt))
-
-    try {
-      if (!uri) {
-        throw new Error('No video URI provided')
+      if (data?.status === 'completed') return data
+      if (data?.status === 'failed' || data?.status === 'error') {
+        throw new Error(
+          'Vimeo failed to generate this animated thumbnail. Try a different start time or duration.'
+        )
       }
 
-      const animatedThumbnails = await getExistingVideoThumbnails(uri)
-      if (animatedThumbnails?.length) {
-        setStatus(ps('already-generated'))
-        setItems(animatedThumbnails)
-        return animatedThumbnails
+      if (Date.now() - startedAt > TIMEOUT_MS) {
+        throw new Error(
+          `Generation timed out after ${Math.round(TIMEOUT_MS / 60000)} minutes. Vimeo may still be processing — reopen this document in a few minutes.`
+        )
       }
 
-      await createSetOfAnimatedThumbnails(uri, startTime, duration)
-      const items = await checkStatus()
-      if (items.length) {
-        setStatus(ps('success'))
-        setItems(items)
-        return items
-      }
-
-      setStatus({
-        type: 'error',
-        message: 'Unkown error. No items found. Please report this issue.',
-      })
-      // Delay to prevent 429 error
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-    } catch (e) {
-      console.error('Error generating thumbnails', e)
-      setStatus({ type: 'error', message: e.message })
-      return
+      setStatus(ps('loading', tries))
+      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS))
     }
-  }
+  }, [])
 
-  const deleteThumbs = async () => {
+  const generateThumbs = useCallback(
+    async (startTime, duration) => {
+      cancelRef.current = false
+      setAttempt(0)
+      setStatus(ps('loading', 0))
+      startTicker()
+
+      try {
+        if (!uri) {
+          throw new Error('This Vimeo document has no URI — re-sync it first.')
+        }
+
+        const existing = await getExistingVideoThumbnails(uri)
+        if (existing?.length) {
+          setStatus(ps('already-generated'))
+          setItems(existing)
+          return existing
+        }
+
+        const created = await createSetOfAnimatedThumbnails(
+          uri,
+          startTime,
+          duration
+        )
+
+        const thumbsetUri = created?.uri
+        if (!thumbsetUri) {
+          throw new Error(
+            'Vimeo did not return a thumbnail set. Please try again.'
+          )
+        }
+
+        await pollThumbset(thumbsetUri)
+        const finalItems = await getExistingVideoThumbnails(uri)
+
+        if (finalItems?.length) {
+          setStatus(ps('success'))
+          setItems(finalItems)
+          return finalItems
+        }
+
+        throw new Error(
+          'Generation finished but no thumbnails were returned. Please try again.'
+        )
+      } catch (e) {
+        if (e?.message === 'Cancelled') {
+          setStatus({ type: 'idle', message: undefined })
+          return
+        }
+        console.error('Error generating animated thumbnails', e)
+        setStatus({ type: 'error', message: e.message })
+        return
+      } finally {
+        stopTicker()
+      }
+    },
+    [uri, pollThumbset, startTicker, stopTicker]
+  )
+
+  const cancel = useCallback(() => {
+    cancelRef.current = true
+  }, [])
+
+  const deleteThumbs = useCallback(async () => {
     try {
       setStatus(ps('loading', null, 'delete'))
       for (const item of items) {
         await deleteExistingVideoThumbnails(item)
       }
-      setStatus(ps('sucess', null, 'delete'))
+      setStatus(ps('success', null, 'delete'))
+      setItems([])
     } catch (e) {
       setStatus({ type: 'error', message: e.message })
     }
-  }
+  }, [items])
 
-  return { status, attempt, items, generateThumbs, deleteThumbs }
+  const reset = useCallback(() => {
+    setStatus({ type: 'idle', message: undefined })
+    setAttempt(0)
+    setElapsed(0)
+  }, [])
+
+  return {
+    status,
+    attempt,
+    elapsed,
+    items,
+    generateThumbs,
+    deleteThumbs,
+    cancel,
+    reset,
+  }
 }

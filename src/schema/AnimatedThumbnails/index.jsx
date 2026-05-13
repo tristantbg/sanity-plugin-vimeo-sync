@@ -8,47 +8,35 @@ export default defineField({
   name: 'animatedThumbnails',
   title: 'Animated Thumbnails',
   description:
-    'Each operation may take up to 5 minutes. Please keep the window open and avoid switching projects/entry during this process.',
+    'Generate a short animated preview from this video, or reference another Vimeo document as a loop. Generation may take a few minutes — keep the window open.',
   components: {
     input,
     field,
   },
   group: 'content',
-  // Even though we are making a custom input,
-  // it is necessary to define the fields of our object
   fields: [
     {
       name: 'startTime',
       type: 'number',
       title: 'Start Time',
       description: 'Start time in seconds',
-      validation: (Rule) =>
-        Rule.min(0)
-          .integer()
-          .custom((value, context) => {
-            if (value + context.parent.duration > context.document?.duration) {
-              return 'Start time exceeds video length'
-            }
-            return true
-          }),
+      validation: (Rule) => Rule.min(0).integer(),
       initialValue: 0,
     },
     {
       name: 'duration',
       type: 'number',
       title: 'Duration',
-      description: 'Maximum duration in seconds',
-      validation: (Rule) =>
-        Rule.min(0)
-          .max(6)
-          .integer()
-          .custom((value, context, e) => {
-            if (context.parent.startTime + value > context.document?.duration) {
-              return 'Duration exceeds video length'
-            }
-            return true
-          }),
+      description: 'Loop duration in seconds (max 6)',
+      validation: (Rule) => Rule.min(1).max(6).integer(),
       initialValue: 6,
+    },
+    {
+      name: 'loopVideo',
+      type: 'vimeo.video',
+      title: 'Loop Video',
+      description:
+        'Optional. When set, use this other Vimeo video as the loop instead of generating animated thumbnails from the current one.',
     },
     quickFields('thumbnails', 'array', [
       {

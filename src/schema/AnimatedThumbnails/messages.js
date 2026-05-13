@@ -2,44 +2,44 @@ export const ps = (type, attempt, action) => {
   switch (type) {
     case 'success':
       if (action === 'delete') {
-        return { type, message: 'Animated thumbnails deleted successfully' }
+        return { type, message: 'Animated thumbnails deleted.' }
       }
-      return { type, message: 'Animated thumbnails generated successfully' }
+      return { type, message: 'Animated thumbnails generated successfully.' }
 
     case 'already-generated':
       return {
         type,
         message:
-          'Animated thumbnails already generated. If you want to regenerate, please delete the existing ones.',
+          'Animated thumbnails already exist for this video. Delete them to regenerate.',
       }
 
     case 'loading':
-    default:
       if (action === 'delete') {
-        return { type, message: 'Deleting animated thumbnails...' }
+        return { type: 'loading-delete', message: 'Deleting animated thumbnails…' }
       }
-      switch (attempt) {
-        case 3:
-          return {
-            type,
-            message:
-              "We're still generating animated thumbnails, please wait...",
-          }
-        case 4:
-          return {
-            type,
-            message:
-              "This is taking longer than expected. We'll let you know when it's done. Please don't close the window.",
-          }
-        case 5:
-          return {
-            type,
-            message:
-              "Last attempt, if it doesn't work, please try again later.",
-          }
-        case 0:
-        default:
-          return { type, message: 'We are generating animated thumbnails...' }
+      if (attempt >= 20) {
+        return {
+          type,
+          message:
+            "Vimeo is taking longer than usual. We'll keep checking — don't close this tab.",
+        }
       }
+      if (attempt >= 8) {
+        return {
+          type,
+          message:
+            "Still generating — Vimeo's animated thumbnail builds usually take 1–3 minutes.",
+        }
+      }
+      if (attempt >= 1) {
+        return {
+          type,
+          message: 'Waiting for Vimeo to finish encoding the animated preview…',
+        }
+      }
+      return { type, message: 'Requesting animated thumbnails from Vimeo…' }
+
+    default:
+      return { type, message: undefined }
   }
 }
