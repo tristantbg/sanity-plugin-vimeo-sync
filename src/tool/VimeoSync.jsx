@@ -153,6 +153,8 @@ export const VimeoSyncView = (options) => {
           )
         : allVideos
 
+      // Keep concurrency below Vimeo's ~5 req/sec budget so the adaptive
+      // backoff in vimeoFetch can absorb bursts without triggering 429s.
       const BATCH_SIZE = 5
       for (let i = 0; i < videos.length; i += BATCH_SIZE) {
         const batch = videos.slice(i, i + BATCH_SIZE)
