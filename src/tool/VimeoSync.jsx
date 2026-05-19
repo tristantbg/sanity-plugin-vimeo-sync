@@ -196,11 +196,13 @@ export const VimeoSyncView = (options) => {
               const duration = itemsWithKeys[0]?.sizes[0]?.duration
               const startTime = itemsWithKeys[0]?.sizes[0]?.startTime
 
-              videoObject.animatedThumbnails = {
-                thumbnails: itemsWithKeys,
-                startTime,
-                duration,
-              }
+              // Preserve existing animatedThumbnails if already set
+              videoObject.animatedThumbnails =
+                videoObject.animatedThumbnails || {
+                  thumbnails: itemsWithKeys,
+                  startTime,
+                  duration,
+                }
             }
 
             return videoObject
