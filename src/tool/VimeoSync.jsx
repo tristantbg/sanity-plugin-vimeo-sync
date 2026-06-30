@@ -179,32 +179,49 @@ export const VimeoSyncView = (options) => {
               width: video.width,
             }
 
+            // Read the editor-managed animatedThumbnails (loopVideo,
+            // startTime, duration) from the existing Sanity document so a
+            // full re-sync via createOrReplace doesn't wipe them.
+            const existingDoc = await client.fetch(
+              '*[_id == $id][0]{animatedThumbnails}',
+              { id: videoObject._id }
+            )
+            const existingAnimated = existingDoc?.animatedThumbnails
+
             const existingThumbnails = await getExistingVideoThumbnails(
               video.uri
             )
-            if (existingThumbnails?.length) {
-              const itemsWithKeys = existingThumbnails.map((item) => {
-                const sizesWithKey = item.sizes.map((size) => ({
-                  ...size,
-                  _key: `size-${size.width}`,
-                }))
-                return {
-                  ...item,
-                  sizes: sizesWithKey,
-                  _key: `thumb-${item.clip_uri}`,
-                }
-              })
+            const itemsWithKeys = existingThumbnails?.length
+              ? existingThumbnails.map((item) => {
+                  const sizesWithKey = item.sizes.map((size) => ({
+                    ...size,
+                    _key: `size-${size.width}`,
+                  }))
+                  return {
+                    ...item,
+                    sizes: sizesWithKey,
+                    _key: `thumb-${item.clip_uri}`,
+                  }
+                })
+              : null
 
-              const duration = itemsWithKeys[0]?.sizes[0]?.duration
-              const startTime = itemsWithKeys[0]?.sizes[0]?.startTime
-
-              // Preserve existing animatedThumbnails if already set
-              videoObject.animatedThumbnails =
-                videoObject.animatedThumbnails || {
-                  thumbnails: itemsWithKeys,
-                  startTime,
-                  duration,
-                }
+            if (existingAnimated || itemsWithKeys) {
+              // Keep all editor-managed fields (incl. loopVideo) from Sanity,
+              // and refresh the Vimeo-generated thumbnails list when available.
+              videoObject.animatedThumbnails = {
+                ...existingAnimated,
+                ...(itemsWithKeys
+                  ? {
+                      thumbnails: itemsWithKeys,
+                      startTime:
+                        existingAnimated?.startTime ??
+                        itemsWithKeys[0]?.sizes[0]?.startTime,
+                      duration:
+                        existingAnimated?.duration ??
+                        itemsWithKeys[0]?.sizes[0]?.duration,
+                    }
+                  : {}),
+              }
             }
 
             return videoObject
