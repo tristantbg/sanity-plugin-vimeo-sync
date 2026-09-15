@@ -110,6 +110,8 @@ const vimeoSyncLocaleStrings = {
 
   /** Warning when document cannot be deleted due to references. {{id}} = document ID */
   'sync.warn-referenced': 'Cannot delete {{id}}: still referenced by other documents',
+  /** Warning when a batched delete transaction fails and falls back to individual deletes. {{message}} = error details */
+  'sync.warn-batch-delete': 'Batch delete failed, retrying documents individually: {{message}}',
 
   /** Log: total videos to sync. {{count}} = total */
   'sync.log-total': 'Total videos to sync: {{count}}',

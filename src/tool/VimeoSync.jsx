@@ -258,20 +258,44 @@ export const VimeoSyncView = (options) => {
 
       console.log(t('sync.log-removing', {count: documentsToDelete.length}))
 
-      // Try individual deletion to handle reference constraints gracefully
+      // Transactions are atomic, so a single referenced document would fail
+      // the whole batch. Find referenced documents up front and skip them.
+      const staleIds = documentsToDelete.map((document) => document._id)
+      const referencedIds = new Set(
+        await client.fetch('*[_id in $ids && count(*[references(^._id)]) > 0]._id', {
+          ids: staleIds,
+        }),
+      )
+      for (const id of referencedIds) {
+        console.warn(t('sync.warn-referenced', {id}))
+        inexistent.push(id)
+      }
+
+      const deletableIds = staleIds.filter((id) => !referencedIds.has(id))
+      const DELETE_BATCH_SIZE = 100
       let successCount = 0
-      for (const document of documentsToDelete) {
+      for (let i = 0; i < deletableIds.length; i += DELETE_BATCH_SIZE) {
+        const batch = deletableIds.slice(i, i + DELETE_BATCH_SIZE)
         try {
-          await client.delete(document._id)
-          successCount++
-        } catch (e) {
-          // Check if it's a reference constraint error
-          if (e.message && e.message.includes('cannot be deleted as there are references')) {
-            console.warn(t('sync.warn-referenced', {id: document._id}))
-            inexistent.push(document._id)
-          } else {
-            console.error(t('sync.error-delete', {id: document._id, message: e.message}))
-            inexistent.push(document._id)
+          const transaction = client.transaction()
+          batch.forEach((id) => transaction.delete(id))
+          await transaction.commit()
+          successCount += batch.length
+        } catch (batchError) {
+          // Fall back to individual deletion so one bad document doesn't block the rest
+          console.warn(t('sync.warn-batch-delete', {message: batchError.message}))
+          for (const id of batch) {
+            try {
+              await client.delete(id)
+              successCount++
+            } catch (e) {
+              if (e.message && e.message.includes('cannot be deleted as there are references')) {
+                console.warn(t('sync.warn-referenced', {id}))
+              } else {
+                console.error(t('sync.error-delete', {id, message: e.message}))
+              }
+              inexistent.push(id)
+            }
           }
         }
       }
