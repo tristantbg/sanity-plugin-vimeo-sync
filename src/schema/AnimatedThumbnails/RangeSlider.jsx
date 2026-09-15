@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
-import { Box, Button, Flex, Stack, Text } from '@sanity/ui'
-import { PlayIcon, PauseIcon } from '@sanity/icons'
+import {PauseIcon} from '@sanity/icons/Pause'
+import {PlayIcon} from '@sanity/icons/Play'
+import {Box, Flex, Stack, Text} from '@sanity/ui'
+import {useCallback, useEffect, useId, useMemo, useRef, useState} from 'react'
 
 const MAX_DURATION = 6
 const MIN_DURATION = 1
@@ -14,13 +15,10 @@ function formatTime(seconds) {
 
 function pickPreviewSrc(srcset) {
   if (!Array.isArray(srcset)) return null
-  const mp4s = srcset.filter(
-    (s) => s?.link && s?.quality !== 'hls' && typeof s?.width === 'number'
-  )
+  const mp4s = srcset.filter((s) => s?.link && s?.quality !== 'hls' && typeof s?.width === 'number')
   if (!mp4s.length) return null
   const sorted = [...mp4s].sort((a, b) => a.width - b.width)
-  const target =
-    sorted.find((s) => s.width >= 540) || sorted[sorted.length - 1]
+  const target = sorted.find((s) => s.width >= 540) || sorted[sorted.length - 1]
   return target?.link || null
 }
 
@@ -42,10 +40,7 @@ export function RangeSlider({
   const previewSrc = useMemo(() => pickPreviewSrc(srcset), [srcset])
 
   const start = Math.max(0, Math.min(startTime || 0, videoDuration || 0))
-  const dur = Math.max(
-    MIN_DURATION,
-    Math.min(duration || MAX_DURATION, MAX_DURATION)
-  )
+  const dur = Math.max(MIN_DURATION, Math.min(duration || MAX_DURATION, MAX_DURATION))
   const end = Math.min(start + dur, videoDuration || start + dur)
 
   useEffect(() => {
@@ -54,7 +49,7 @@ export function RangeSlider({
     if (Math.abs(v.currentTime - start) > 0.05) {
       try {
         v.currentTime = start
-      } catch (e) {
+      } catch {
         // pre-metadata
       }
     }
@@ -62,12 +57,12 @@ export function RangeSlider({
 
   useEffect(() => {
     const v = videoRef.current
-    if (!v) return
+    if (!v) return undefined
     const onTimeUpdate = () => {
       if (v.currentTime >= end - 0.05) {
         try {
           v.currentTime = start
-        } catch (e) {
+        } catch {
           /* noop */
         }
       }
@@ -93,7 +88,7 @@ export function RangeSlider({
     if (v.paused) {
       try {
         v.currentTime = start
-      } catch (e) {
+      } catch {
         /* noop */
       }
       v.play().catch(() => {})
@@ -113,7 +108,7 @@ export function RangeSlider({
         })
       }
     },
-    [start, dur, onChange]
+    [start, dur, onChange],
   )
 
   const handleStartInput = useCallback(
@@ -126,7 +121,7 @@ export function RangeSlider({
       else newDur = end - newStart
       commit(newStart, newDur)
     },
-    [end, dur, commit]
+    [end, dur, commit],
   )
 
   const handleEndInput = useCallback(
@@ -145,7 +140,7 @@ export function RangeSlider({
       }
       commit(newStart, newDur)
     },
-    [start, videoDuration, commit]
+    [start, videoDuration, commit],
   )
 
   if (!videoDuration) {
@@ -158,8 +153,7 @@ export function RangeSlider({
         }}
       >
         <Text size={1} muted>
-          Video duration unavailable. Re-sync this Vimeo document to enable the
-          time selector.
+          Video duration unavailable. Re-sync this Vimeo document to enable the time selector.
         </Text>
       </Box>
     )
@@ -169,7 +163,7 @@ export function RangeSlider({
   const endPct = (end / videoDuration) * 100
 
   return (
-    <Stack space={3}>
+    <Stack gap={3}>
       <Box
         style={{
           position: 'relative',
@@ -196,11 +190,7 @@ export function RangeSlider({
             }}
           />
         ) : poster ? (
-          <img
-            src={poster}
-            alt=""
-            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-          />
+          <img src={poster} alt="" style={{width: '100%', height: '100%', objectFit: 'contain'}} />
         ) : null}
 
         {previewSrc && (
@@ -235,9 +225,9 @@ export function RangeSlider({
               }}
             >
               {isPlaying ? (
-                <PauseIcon style={{ fontSize: 28 }} />
+                <PauseIcon style={{fontSize: 28}} />
               ) : (
-                <PlayIcon style={{ fontSize: 28 }} />
+                <PlayIcon style={{fontSize: 28}} />
               )}
             </span>
           </button>
@@ -286,10 +276,7 @@ export function RangeSlider({
 
       <div className={cls}>
         <div className="vt-track" />
-        <div
-          className="vt-active"
-          style={{ left: `${startPct}%`, width: `${endPct - startPct}%` }}
-        />
+        <div className="vt-active" style={{left: `${startPct}%`, width: `${endPct - startPct}%`}} />
         <input
           type="range"
           min={0}
@@ -298,7 +285,7 @@ export function RangeSlider({
           value={start}
           onChange={handleStartInput}
           disabled={disabled}
-          style={{ zIndex: start === videoDuration ? 5 : 3 }}
+          style={{zIndex: start === videoDuration ? 5 : 3}}
         />
         <input
           type="range"
@@ -308,24 +295,15 @@ export function RangeSlider({
           value={end}
           onChange={handleEndInput}
           disabled={disabled}
-          style={{ zIndex: 4 }}
+          style={{zIndex: 4}}
         />
       </div>
 
       <Flex justify="space-between" align="center" wrap="wrap" gap={2}>
-        <Text
-          size={1}
-          weight="medium"
-          style={{ fontVariantNumeric: 'tabular-nums' }}
-        >
+        <Text size={1} weight="medium" style={{fontVariantNumeric: 'tabular-nums'}}>
           From{' '}
-          <span style={{ color: 'var(--card-accent-fg-color, #f97316)' }}>
-            {formatTime(start)}
-          </span>{' '}
-          to{' '}
-          <span style={{ color: 'var(--card-accent-fg-color, #f97316)' }}>
-            {formatTime(end)}
-          </span>{' '}
+          <span style={{color: 'var(--card-accent-fg-color, #f97316)'}}>{formatTime(start)}</span>{' '}
+          to <span style={{color: 'var(--card-accent-fg-color, #f97316)'}}>{formatTime(end)}</span>{' '}
           <Text as="span" size={1} muted>
             ({dur}s · max {MAX_DURATION}s)
           </Text>

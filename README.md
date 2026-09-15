@@ -22,8 +22,8 @@ npm install sanity-plugin-vimeo-sync
 Add it as a plugin in `sanity.config.ts` (or .js):
 
 ```ts
-import { defineConfig } from 'sanity'
-import { vimeoSync } from 'sanity-plugin-vimeo-sync'
+import {defineConfig} from 'sanity'
+import {vimeoSync} from 'sanity-plugin-vimeo-sync'
 
 export default defineConfig({
   // ...
@@ -60,7 +60,7 @@ Once the access token is configured, click **Load Vimeo videos** in the Vimeo Sy
 If you only want to sync videos from a specific Vimeo folder (project), pass its ID via the plugin config:
 
 ```ts
-vimeoSync({ folderId: '12345678' })
+vimeoSync({folderId: '12345678'})
 ```
 
 Or set the `SANITY_STUDIO_VIMEO_FOLDER_ID` environment variable in your Studio's `.env` file:
@@ -112,7 +112,7 @@ Use GROQ to query synced videos in your front-end:
 To reference a Vimeo video from another document, use the `vimeo.video` type provided by the plugin:
 
 ```ts
-import { defineType, defineField } from 'sanity'
+import {defineType, defineField} from 'sanity'
 
 export default defineType({
   name: 'myDocument',

@@ -10,82 +10,75 @@
   "bugs": {
     "url": "https://github.com/tristantbg/sanity-plugin-vimeo-sync/issues"
   },
+  "license": "MIT",
+  "author": "Tristan Bagot <hello@tristanbagot.com>",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/tristantbg/sanity-plugin-vimeo-sync.git"
   },
-  "license": "MIT",
-  "author": "Tristan Bagot <hello@tristanbagot.com>",
-  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
   "type": "module",
+  "sideEffects": false,
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "source": "./src/index.ts",
-      "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
     "./package.json": "./package.json"
   },
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
+  "publishConfig": {
+    "exports": {
+      ".": "./dist/index.js",
+      "./package.json": "./package.json"
+    }
+  },
   "scripts": {
     "build": "plugin-kit verify-package --silent && pkg-utils build --strict --check --clean",
     "dev": "pnpm link-watch",
-    "format": "prettier --write --cache --ignore-unknown .",
+    "format": "oxfmt",
     "link-watch": "plugin-kit link-watch",
-    "lint": "eslint .",
+    "lint": "oxlint",
     "prepublishOnly": "npm run build",
     "watch": "pkg-utils watch --strict"
   },
-  "browserslist": "extends @sanity/browserslist-config",
   "dependencies": {
-    "@sanity/color": "^3.0.6",
-    "@sanity/icons": "^3.7.4",
-    "@sanity/studio-secrets": "^4.0.5",
-    "@sanity/ui": "^3.2.0",
+    "@sanity/color": "^3.0.8",
+    "@sanity/icons": "^5.2.2",
+    "@sanity/studio-secrets": "^4.0.19",
+    "@sanity/ui": "^4.2.1",
     "hls-video-element": "^1.5.11",
     "media-chrome": "^4.19.2",
-    "nanoid": "^5.1.16",
+    "nanoid": "^6.0.1",
     "react-icons": "^5.7.0",
     "yalc": "1.0.0-pre.53"
   },
   "devDependencies": {
-    "@sanity/pkg-utils": "^10.8.1",
-    "@sanity/plugin-kit": "^6.0.1",
-    "@types/react": "^19.2.17",
-    "@typescript-eslint/eslint-plugin": "^8.62.1",
-    "@typescript-eslint/parser": "^8.62.1",
-    "eslint": "^10.6.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-config-sanity": "^7.1.4",
-    "eslint-plugin-prettier": "^5.5.6",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "prettier": "^3.9.4",
-    "prettier-plugin-packagejson": "^3.0.2",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
-    "sanity": "^6.2.0",
-    "styled-components": "6.4.3",
+    "@sanity/pkg-utils": "^13.0.0",
+    "@sanity/plugin-kit": "^10.0.9",
+    "@types/react": "^19.3.0",
+    "oxfmt": "^0.63.0",
+    "oxlint": "^1.82.0",
+    "oxlint-tsgolint": "^7.0.2001",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "sanity": "^6.13.2",
+    "styled-components": "6.5.3",
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "react": "^18 || ^19",
-    "sanity": "^3 || ^5"
+    "react": "^19.2",
+    "react-dom": "^19.2",
+    "sanity": "^5 || ^6",
+    "styled-components": "^6.1"
   },
-  "packageManager": "pnpm@10.28.1+sha512.7d7dbbca9e99447b7c3bf7a73286afaaf6be99251eb9498baefa7d406892f67b879adb3a1d7e687fc4ccc1a388c7175fbaae567a26ab44d1067b54fcb0d6a316",
+  "browserslist": "extends @sanity/browserslist-config",
   "engines": {
     "node": ">=20.19 <22 || >=22.12"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "scrollmirror",
-      "yarn"
-    ]
-  },
+  "packageManager": "pnpm@12.4.1",
   "sanityPlugin": {
     "verifyPackage": {
       "eslintImports": false

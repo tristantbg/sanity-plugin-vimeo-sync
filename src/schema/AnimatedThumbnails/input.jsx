@@ -1,28 +1,16 @@
-import {
-  CloseIcon,
-  GenerateIcon,
-  ResetIcon,
-  TrashIcon,
-} from '@sanity/icons'
-import { useSecrets } from '@sanity/studio-secrets'
-import {
-  Box,
-  Button,
-  Card,
-  Flex,
-  Spinner,
-  Stack,
-  Tab,
-  TabList,
-  TabPanel,
-  Text,
-} from '@sanity/ui'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { MemberField, set, unset, useClient, useFormValue } from 'sanity'
-import { namespace } from '../../constants'
-import { setPluginConfig } from '../../helpers'
-import { RangeSlider } from './RangeSlider'
-import { useAnimatedThumbs } from './hooks'
+import {CloseIcon} from '@sanity/icons/Close'
+import {GenerateIcon} from '@sanity/icons/Generate'
+import {ResetIcon} from '@sanity/icons/Reset'
+import {TrashIcon} from '@sanity/icons/Trash'
+import {useSecrets} from '@sanity/studio-secrets'
+import {Box, Button, Card, Flex, Spinner, Stack, Tab, TabList, TabPanel, Text} from '@sanity/ui'
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import {MemberField, set, unset, useClient, useFormValue} from 'sanity'
+
+import {namespace} from '../../constants'
+import {setPluginConfig} from '../../helpers'
+import {useAnimatedThumbs} from './hooks'
+import {RangeSlider} from './RangeSlider'
 
 function formatElapsed(seconds) {
   const s = Math.max(0, Math.floor(seconds || 0))
@@ -31,7 +19,7 @@ function formatElapsed(seconds) {
   return `${mm}:${String(ss).padStart(2, '0')}`
 }
 
-function ProgressBar({ value }) {
+function ProgressBar({value}) {
   return (
     <Box
       style={{
@@ -55,26 +43,16 @@ function ProgressBar({ value }) {
   )
 }
 
-export function input(props) {
-  const {
-    value,
-    members,
-    renderField,
-    renderInput,
-    renderItem,
-    onChange,
-    renderPreview,
-  } = props
+export function AnimatedThumbnailsInput(props) {
+  const {value, members, renderField, renderInput, renderItem, onChange, renderPreview} = props
 
-  const { secrets, loading: secretsLoading } = useSecrets(namespace)
+  const {secrets, loading: secretsLoading} = useSecrets(namespace)
 
   useEffect(() => {
     if (!secrets?.apiKey && !secretsLoading) {
-      console.error(
-        'Vimeo access token is not set. Please set it in the Studio Secrets.'
-      )
+      console.error('Vimeo access token is not set. Please set it in the Studio Secrets.')
     } else if (secrets?.apiKey) {
-      setPluginConfig({ accessToken: secrets.apiKey })
+      setPluginConfig({accessToken: secrets.apiKey})
     }
   }, [secrets, secretsLoading])
 
@@ -82,8 +60,7 @@ export function input(props) {
   const parentSrcset = useFormValue(['srcset'])
   const parentDuration = useFormValue(['duration'])
   const parentPictures = useFormValue(['pictures'])
-  const parentPoster =
-    parentPictures?.[2]?.link || parentPictures?.[1]?.link || null
+  const parentPoster = parentPictures?.[2]?.link || parentPictures?.[1]?.link || null
 
   const startTime = value?.startTime ?? 0
   const duration = value?.duration ?? 6
@@ -92,7 +69,7 @@ export function input(props) {
 
   const [mode, setMode] = useState(loopVideoRef ? 'loop' : 'animated')
 
-  const client = useClient({ apiVersion: '2025-02-19' })
+  const client = useClient({apiVersion: '2025-02-19'})
   const [loopVideo, setLoopVideo] = useState(null)
   const [loopVideoLoading, setLoopVideoLoading] = useState(false)
   const [loopVideoError, setLoopVideoError] = useState(null)
@@ -112,29 +89,21 @@ export function input(props) {
           srcset[]{ link, width, height, quality },
           "poster": pictures[2].link
         }`,
-        { id: loopVideoRef }
+        {id: loopVideoRef},
       )
       .then((doc) => {
         setLoopVideo(doc)
         setLoopVideoError(null)
+        return doc
       })
       .catch((err) => setLoopVideoError(err.message))
       .finally(() => setLoopVideoLoading(false))
   }, [loopVideoRef, client])
 
-  const {
-    status,
-    attempt,
-    elapsed,
-    items,
-    generateThumbs,
-    deleteThumbs,
-    cancel,
-    resumeFromVimeo,
-  } = useAnimatedThumbs(videoUri, value)
+  const {status, attempt, elapsed, items, generateThumbs, deleteThumbs, cancel, resumeFromVimeo} =
+    useAnimatedThumbs(videoUri, value)
 
-  const isBusy =
-    status.type === 'loading' || status.type === 'loading-delete'
+  const isBusy = status.type === 'loading' || status.type === 'loading-delete'
 
   useEffect(() => {
     if (mode !== 'animated') return
@@ -149,15 +118,13 @@ export function input(props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items])
 
-  const loopVideoMember = members.find(
-    (m) => m.kind === 'field' && m.name === 'loopVideo'
-  )
+  const loopVideoMember = members.find((m) => m.kind === 'field' && m.name === 'loopVideo')
 
   const handleRangeChange = useCallback(
-    ({ startTime: newStart, duration: newDur }) => {
+    ({startTime: newStart, duration: newDur}) => {
       onChange([set(newStart, ['startTime']), set(newDur, ['duration'])])
     },
-    [onChange]
+    [onChange],
   )
 
   const persistItems = useCallback(
@@ -180,7 +147,7 @@ export function input(props) {
       if (typeof d === 'number') patches.push(set(d, ['duration']))
       onChange(patches)
     },
-    [onChange]
+    [onChange],
   )
 
   const handleGenerate = useCallback(async () => {
@@ -199,15 +166,11 @@ export function input(props) {
     const thumbs = value?.thumbnails
     if (!thumbs?.length) return
     const hasPending = thumbs.some(
-      (t) =>
-        t?.status &&
-        t.status !== 'completed' &&
-        t.status !== 'failed' &&
-        t.status !== 'error'
+      (t) => t?.status && t.status !== 'completed' && t.status !== 'failed' && t.status !== 'error',
     )
     if (!hasPending) return
     didTryResumeRef.current = true
-    ;(async () => {
+    void (async () => {
       const resolved = await resumeFromVimeo()
       if (resolved?.length) persistItems(resolved)
     })()
@@ -230,15 +193,9 @@ export function input(props) {
   }, [items])
 
   const hasThumbnails = existingThumbnails?.length > 0
-  const allCompleted =
-    hasThumbnails &&
-    existingThumbnails.every((t) => t?.status === 'completed')
 
   // Estimate generation progress: typical Vimeo build is ~2 minutes
-  const estimatedProgress = Math.min(
-    95,
-    (elapsed / (2 * 60)) * 100
-  )
+  const estimatedProgress = Math.min(95, (elapsed / (2 * 60)) * 100)
 
   if (secretsLoading) {
     return (
@@ -254,9 +211,9 @@ export function input(props) {
   }
 
   return (
-    <Stack space={3}>
+    <Stack gap={3}>
       <Card>
-        <TabList space={1}>
+        <TabList gap={1}>
           <Tab
             id="tab-animated"
             aria-controls="panel-animated"
@@ -273,17 +230,13 @@ export function input(props) {
           />
         </TabList>
 
-        <TabPanel
-          id="panel-animated"
-          aria-labelledby="tab-animated"
-          hidden={mode !== 'animated'}
-        >
+        <TabPanel id="panel-animated" aria-labelledby="tab-animated" hidden={mode !== 'animated'}>
           <Card paddingTop={3}>
-            <Stack space={4}>
-              <Stack space={2}>
+            <Stack gap={4}>
+              <Stack gap={2}>
                 <Text size={1} muted>
-                  Generated by Vimeo from this video. Pick a start time and a
-                  duration up to 6 seconds.
+                  Generated by Vimeo from this video. Pick a start time and a duration up to 6
+                  seconds.
                 </Text>
               </Stack>
 
@@ -307,12 +260,7 @@ export function input(props) {
                     onClick={cancel}
                   />
                 ) : status.type === 'loading-delete' ? (
-                  <Button
-                    icon={CloseIcon}
-                    mode="ghost"
-                    text="Deleting…"
-                    disabled
-                  />
+                  <Button icon={CloseIcon} mode="ghost" text="Deleting…" disabled />
                 ) : hasThumbnails ? (
                   <Button
                     icon={TrashIcon}
@@ -331,28 +279,22 @@ export function input(props) {
                 )}
                 {!isBusy && hasThumbnails && (
                   <Text size={1} muted>
-                    Existing thumbnails are locked in. Delete them to pick a new
-                    time range.
+                    Existing thumbnails are locked in. Delete them to pick a new time range.
                   </Text>
                 )}
               </Flex>
 
               {status.type === 'loading' && (
                 <Card padding={3} radius={2} tone="primary" border>
-                  <Stack space={3}>
+                  <Stack gap={3}>
                     <Flex align="center" gap={3} wrap="wrap">
                       <Spinner />
-                      <Stack space={2} style={{ flex: 1, minWidth: 200 }}>
+                      <Stack gap={2} style={{flex: 1, minWidth: 200}}>
                         <Text size={1} weight="semibold">
                           {status.message}
                         </Text>
-                        <Text
-                          size={1}
-                          muted
-                          style={{ fontVariantNumeric: 'tabular-nums' }}
-                        >
-                          Elapsed {formatElapsed(elapsed)} · attempt{' '}
-                          {Math.max(1, attempt)}
+                        <Text size={1} muted style={{fontVariantNumeric: 'tabular-nums'}}>
+                          Elapsed {formatElapsed(elapsed)} · attempt {Math.max(1, attempt)}
                         </Text>
                       </Stack>
                     </Flex>
@@ -372,7 +314,7 @@ export function input(props) {
 
               {status.type === 'error' && (
                 <Card padding={3} radius={2} tone="critical" border>
-                  <Stack space={3}>
+                  <Stack gap={3}>
                     <Text size={1} weight="semibold">
                       Generation failed
                     </Text>
@@ -404,7 +346,7 @@ export function input(props) {
               )}
 
               {generatedPreviewUrl && (
-                <Stack space={2}>
+                <Stack gap={2}>
                   <Text size={1} weight="semibold">
                     Preview
                   </Text>
@@ -432,16 +374,12 @@ export function input(props) {
           </Card>
         </TabPanel>
 
-        <TabPanel
-          id="panel-loop"
-          aria-labelledby="tab-loop"
-          hidden={mode !== 'loop'}
-        >
+        <TabPanel id="panel-loop" aria-labelledby="tab-loop" hidden={mode !== 'loop'}>
           <Card paddingTop={3}>
-            <Stack space={4}>
+            <Stack gap={4}>
               <Text size={1} muted>
-                Reuse another Vimeo video as the loop instead of generating one.
-                Pick a start time and duration within the selected video.
+                Reuse another Vimeo video as the loop instead of generating one. Pick a start time
+                and duration within the selected video.
               </Text>
 
               {loopVideoMember && (
@@ -467,14 +405,12 @@ export function input(props) {
 
                   {loopVideoError && (
                     <Card padding={3} radius={2} tone="critical" border>
-                      <Text size={1}>
-                        Couldn't load the selected video: {loopVideoError}
-                      </Text>
+                      <Text size={1}>Couldn't load the selected video: {loopVideoError}</Text>
                     </Card>
                   )}
 
                   {loopVideo && (
-                    <Stack space={3}>
+                    <Stack gap={3}>
                       <RangeSlider
                         srcset={loopVideo.srcset}
                         poster={loopVideo.poster}

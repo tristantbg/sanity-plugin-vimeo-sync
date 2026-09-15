@@ -1,10 +1,11 @@
-import { SyncIcon } from '@sanity/icons'
-import { Button, Card, Flex, Spinner, Text } from '@sanity/ui'
-import { useTranslation } from 'sanity'
-import { vimeoSyncLocaleNamespace } from '../../i18n'
+import {SyncIcon} from '@sanity/icons/Sync'
+import {Button, Card, Flex, Spinner, Text} from '@sanity/ui'
+import {useTranslation} from 'sanity'
 
-export function SyncActions({ status, onSync, onSyncNew, disabled }) {
-  const { t } = useTranslation(vimeoSyncLocaleNamespace)
+import {vimeoSyncLocaleNamespace} from '../../i18n'
+
+export function SyncActions({status, onSync, onSyncNew, disabled}) {
+  const {t} = useTranslation(vimeoSyncLocaleNamespace)
 
   return (
     <Flex gap={3}>
@@ -37,11 +38,7 @@ export function SyncActions({ status, onSync, onSyncNew, disabled }) {
       )}
 
       {(status.type === 'finished' || status.type === 'error') && (
-        <Card
-          padding={3}
-          border={true}
-          tone={status.type === 'error' ? 'critical' : 'positive'}
-        >
+        <Card padding={3} border={true} tone={status.type === 'error' ? 'critical' : 'positive'}>
           {status.type === 'error' && (
             <Text size={1}>
               {t('sync.error-prefix')}

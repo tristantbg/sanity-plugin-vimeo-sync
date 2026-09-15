@@ -1,7 +1,8 @@
-import { defineField } from 'sanity'
-import { quickFields } from '../../helpers'
-import { input } from './Input'
-import { field } from './field'
+import {defineField} from 'sanity'
+
+import {quickFields} from '../../helpers'
+import {AnimatedThumbnailsField} from './field'
+import {AnimatedThumbnailsInput} from './input'
 
 export default defineField({
   type: 'object',
@@ -10,8 +11,8 @@ export default defineField({
   description:
     'Generate a short animated preview from this video, or reference another Vimeo document as a loop. Generation may take a few minutes — keep the window open.',
   components: {
-    input,
-    field,
+    input: AnimatedThumbnailsInput,
+    field: AnimatedThumbnailsField,
   },
   group: 'content',
   fields: [

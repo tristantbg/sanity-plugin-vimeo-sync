@@ -1,4 +1,4 @@
-import { nanoid } from 'nanoid'
+import {nanoid} from 'nanoid'
 
 // config.js
 let pluginConfig = {}
@@ -39,7 +39,7 @@ function setGate(ms) {
         const remaining = until - Date.now()
         if (remaining > 0) setTimeout(r, remaining)
         else r()
-      })
+      }),
   )
 }
 
@@ -75,7 +75,7 @@ export async function vimeoFetch(url, options = {}, maxRetries = 6) {
       if (attempt === maxRetries) throw err
       const delay = backoffDelay(attempt)
       console.warn(
-        `Vimeo network error (attempt ${attempt + 1}/${maxRetries}): ${err.message}. Retrying in ${Math.round(delay / 1000)}s…`
+        `Vimeo network error (attempt ${attempt + 1}/${maxRetries}): ${err.message}. Retrying in ${Math.round(delay / 1000)}s…`,
       )
       setGate(delay)
       continue
@@ -86,10 +86,9 @@ export async function vimeoFetch(url, options = {}, maxRetries = 6) {
       if (attempt === maxRetries) {
         throw new Error('Vimeo API rate limit exceeded after multiple retries.')
       }
-      const retryAfter =
-        parseRetryAfter(res.headers.get('Retry-After')) ?? backoffDelay(attempt)
+      const retryAfter = parseRetryAfter(res.headers.get('Retry-After')) ?? backoffDelay(attempt)
       console.warn(
-        `Vimeo rate limit hit (attempt ${attempt + 1}/${maxRetries}). Pausing all requests for ${Math.round(retryAfter / 1000)}s…`
+        `Vimeo rate limit hit (attempt ${attempt + 1}/${maxRetries}). Pausing all requests for ${Math.round(retryAfter / 1000)}s…`,
       )
       setGate(retryAfter)
       continue
@@ -100,7 +99,7 @@ export async function vimeoFetch(url, options = {}, maxRetries = 6) {
       if (attempt === maxRetries) return res
       const delay = backoffDelay(attempt)
       console.warn(
-        `Vimeo ${res.status} (attempt ${attempt + 1}/${maxRetries}). Retrying in ${Math.round(delay / 1000)}s…`
+        `Vimeo ${res.status} (attempt ${attempt + 1}/${maxRetries}). Retrying in ${Math.round(delay / 1000)}s…`,
       )
       setGate(delay)
       continue
@@ -132,7 +131,7 @@ export async function vimeoFetch(url, options = {}, maxRetries = 6) {
 }
 
 export const setPluginConfig = (config) => {
-  pluginConfig = { ...pluginConfig, ...config }
+  pluginConfig = {...pluginConfig, ...config}
 }
 
 export const overridePluginConfig = (config) => {
@@ -157,7 +156,7 @@ export function quickFields(
   preview = [],
   group = '',
   description,
-  readOnly = true
+  readOnly = true,
 ) {
   const field = {
     readOnly,
@@ -193,10 +192,9 @@ export function quickFields(
  * This function maps an existing key in the array to '_key'
  *
  * @param {arr} array The array to mutate
- * @param {string} uniqueArrayKey The key in this array to setup as the unique key
  */
-export function addKeys(array, uniqueArrayKey) {
-  return array.map((item, index) => {
+export function addKeys(array) {
+  return array.map((item) => {
     item._key = nanoid()
 
     return item

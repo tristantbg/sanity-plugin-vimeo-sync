@@ -1,13 +1,13 @@
-import { SyncIcon } from '@sanity/icons'
-import { definePlugin } from 'sanity'
-import { vimeoSyncUsEnglishLocaleBundle } from './i18n'
+import {SyncIcon} from '@sanity/icons/Sync'
+import {definePlugin} from 'sanity'
+
+import {setPluginConfig} from './helpers'
+import {vimeoSyncUsEnglishLocaleBundle} from './i18n'
 import VimeoObjectPictures from './schema/VimeoObjectPictures'
 import VimeoObjectSrcset from './schema/VimeoObjectSrcset'
 import VimeoSchema from './schema/VimeoSchema'
 import VimeoVideoField from './schema/vimeoVideoField'
-
-import { setPluginConfig } from './helpers'
-import { VimeoSyncView } from './tool/VimeoSync'
+import {VimeoSyncView} from './tool/VimeoSync'
 
 /**
  * Usage in `sanity.config.ts` (or .js)
@@ -45,12 +45,7 @@ export const vimeoSync = definePlugin((config = {}) => {
       ]
     },
     schema: {
-      types: [
-        VimeoSchema,
-        VimeoObjectSrcset,
-        VimeoObjectPictures,
-        VimeoVideoField,
-      ],
+      types: [VimeoSchema, VimeoObjectSrcset, VimeoObjectPictures, VimeoVideoField],
     },
 
     i18n: {

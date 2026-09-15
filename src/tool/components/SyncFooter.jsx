@@ -1,10 +1,12 @@
-import { InfoOutlineIcon } from '@sanity/icons'
-import { Box, Flex, Text, Tooltip } from '@sanity/ui'
-import { useTranslation } from 'sanity'
-import { vimeoSyncLocaleNamespace } from '../../i18n'
+import {InfoOutlineIcon} from '@sanity/icons/InfoOutline'
+import {Box, Flex, Text} from '@sanity/ui'
+import {Tooltip} from '@sanity/ui/tooltip'
+import {useTranslation} from 'sanity'
+
+import {vimeoSyncLocaleNamespace} from '../../i18n'
 
 export function SyncFooter() {
-  const { t } = useTranslation(vimeoSyncLocaleNamespace)
+  const {t} = useTranslation(vimeoSyncLocaleNamespace)
 
   return (
     <Flex justify={'space-between'} align={'center'}>
@@ -12,7 +14,7 @@ export function SyncFooter() {
       <Text>
         <Tooltip
           content={
-            <Box padding={1} style={{ maxWidth: '300px' }}>
+            <Box padding={1} style={{maxWidth: '300px'}}>
               <Flex gap={5} direction={'column'}>
                 <Text muted size={1}>
                   {t('tool.tooltip-p1')}

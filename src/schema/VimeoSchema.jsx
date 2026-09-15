@@ -1,6 +1,7 @@
-import { DocumentVideoIcon } from '@sanity/icons'
-import { defineType, isDev } from 'sanity'
-import { quickFields } from '../helpers'
+import {DocumentVideoIcon} from '@sanity/icons/DocumentVideo'
+import {defineType, isDev} from 'sanity'
+
+import {quickFields} from '../helpers'
 import AnimatedThumbnailsField from './AnimatedThumbnails'
 
 export default defineType({
@@ -32,19 +33,13 @@ export default defineType({
     quickFields('width', 'number', [], [], 'dev-info'),
     quickFields('height', 'number', [], [], 'dev-info'),
     quickFields('aspectRatio', 'number', [], [], 'dev-info'),
-    quickFields(
-      'srcset',
-      'array',
-      [quickFields('vimeoSrcset', 'vimeoSrcset')],
-      [],
-      'dev-info'
-    ),
+    quickFields('srcset', 'array', [quickFields('vimeoSrcset', 'vimeoSrcset')], [], 'dev-info'),
     quickFields(
       'pictures',
       'array',
       [quickFields('vimeoPictures', 'vimeoPictures')],
       [],
-      'dev-info'
+      'dev-info',
     ),
   ],
   preview: {
@@ -55,13 +50,11 @@ export default defineType({
       media: 'pictures.2.link',
     },
     prepare(selection) {
-      const { title, subtitle, media } = selection
+      const {title, subtitle, media} = selection
       return {
         title,
         subtitle,
-        media: (
-          <img style={{ objectFit: 'cover' }} src={media} alt={`${title}`} />
-        ),
+        media: <img style={{objectFit: 'cover'}} src={media} alt={`${title}`} />,
       }
     },
   },

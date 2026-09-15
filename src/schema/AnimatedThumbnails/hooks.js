@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { ps } from './messages'
+import {useCallback, useEffect, useRef, useState} from 'react'
+
+import {ps} from './messages'
 import {
   createSetOfAnimatedThumbnails,
   deleteExistingVideoThumbnails,
@@ -15,13 +16,10 @@ const isPending = (t) => t?.status && !isCompleted(t) && !isFailed(t)
 
 export const useAnimatedThumbs = (uri, field) => {
   const startThumbs = field?.thumbnails || []
-  const allCompleted =
-    startThumbs.length > 0 && startThumbs.every(isCompleted)
+  const allCompleted = startThumbs.length > 0 && startThumbs.every(isCompleted)
 
   const [status, setStatus] = useState(
-    allCompleted
-      ? ps('already-generated')
-      : { type: 'idle', message: undefined }
+    allCompleted ? ps('already-generated') : {type: 'idle', message: undefined},
   )
   const [attempt, setAttempt] = useState(0)
   const [elapsed, setElapsed] = useState(0)
@@ -63,7 +61,6 @@ export const useAnimatedThumbs = (uri, field) => {
       let tries = 0
       let missingCycles = 0
 
-      // eslint-disable-next-line no-constant-condition
       while (true) {
         if (cancelRef.current) {
           throw new Error('Cancelled')
@@ -74,13 +71,10 @@ export const useAnimatedThumbs = (uri, field) => {
         const list = await getExistingVideoThumbnails(uri)
         let data = null
         if (list?.length) {
-          data =
-            (thumbsetUri && list.find((t) => t?.uri === thumbsetUri)) || null
+          data = (thumbsetUri && list.find((t) => t?.uri === thumbsetUri)) || null
           if (!data) {
             // Fallback: newest thumbset by created_on
-            data = [...list].sort(
-              (a, b) => (b?.created_on || 0) - (a?.created_on || 0)
-            )[0]
+            data = [...list].sort((a, b) => (b?.created_on || 0) - (a?.created_on || 0))[0]
           }
         }
 
@@ -89,21 +83,21 @@ export const useAnimatedThumbs = (uri, field) => {
           if (isCompleted(data)) return data
           if (isFailed(data)) {
             throw new Error(
-              'Vimeo failed to generate this animated thumbnail. Try a different start time or duration.'
+              'Vimeo failed to generate this animated thumbnail. Try a different start time or duration.',
             )
           }
         } else {
           missingCycles += 1
           if (missingCycles > 5) {
             throw new Error(
-              "The thumbnail set is no longer listed on Vimeo. It may have been deleted — refresh and try again."
+              'The thumbnail set is no longer listed on Vimeo. It may have been deleted — refresh and try again.',
             )
           }
         }
 
         if (Date.now() - startedAt > TIMEOUT_MS) {
           throw new Error(
-            `Generation timed out after ${Math.round(TIMEOUT_MS / 60000)} minutes. Vimeo may still be processing — reopen this document in a few minutes.`
+            `Generation timed out after ${Math.round(TIMEOUT_MS / 60000)} minutes. Vimeo may still be processing — reopen this document in a few minutes.`,
           )
         }
 
@@ -111,7 +105,7 @@ export const useAnimatedThumbs = (uri, field) => {
         await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS))
       }
     },
-    [uri]
+    [uri],
   )
 
   // Polls any pending thumbset on Vimeo, then returns the final list.
@@ -143,7 +137,7 @@ export const useAnimatedThumbs = (uri, field) => {
       const finalItems = await drainPending()
 
       if (!finalItems?.length) {
-        setStatus({ type: 'idle', message: undefined })
+        setStatus({type: 'idle', message: undefined})
         return null
       }
 
@@ -157,20 +151,19 @@ export const useAnimatedThumbs = (uri, field) => {
       if (finalItems.some(isFailed)) {
         setStatus({
           type: 'error',
-          message:
-            'Vimeo reported a failed thumbnail in this set. Delete it and regenerate.',
+          message: 'Vimeo reported a failed thumbnail in this set. Delete it and regenerate.',
         })
       } else {
-        setStatus({ type: 'idle', message: undefined })
+        setStatus({type: 'idle', message: undefined})
       }
       return finalItems
     } catch (e) {
       if (e?.message === 'Cancelled') {
-        setStatus({ type: 'idle', message: undefined })
+        setStatus({type: 'idle', message: undefined})
         return null
       }
       console.error('Error resuming animated thumbnails', e)
-      setStatus({ type: 'error', message: e.message })
+      setStatus({type: 'error', message: e.message})
       return null
     } finally {
       stopTicker()
@@ -207,8 +200,7 @@ export const useAnimatedThumbs = (uri, field) => {
               setItems(finalItems)
               setStatus({
                 type: 'error',
-                message:
-                  'A thumbnail in the existing set failed. Delete it and try again.',
+                message: 'A thumbnail in the existing set failed. Delete it and try again.',
               })
               return finalItems
             }
@@ -226,23 +218,16 @@ export const useAnimatedThumbs = (uri, field) => {
           setItems(existing)
           setStatus({
             type: 'error',
-            message:
-              'Existing thumbnails are in a failed state. Delete them and try again.',
+            message: 'Existing thumbnails are in a failed state. Delete them and try again.',
           })
           return existing
         }
 
-        const created = await createSetOfAnimatedThumbnails(
-          uri,
-          startTime,
-          duration
-        )
+        const created = await createSetOfAnimatedThumbnails(uri, startTime, duration)
 
         const thumbsetUri = created?.uri
         if (!thumbsetUri) {
-          throw new Error(
-            'Vimeo did not return a thumbnail set. Please try again.'
-          )
+          throw new Error('Vimeo did not return a thumbnail set. Please try again.')
         }
 
         await pollThumbset(thumbsetUri)
@@ -254,22 +239,20 @@ export const useAnimatedThumbs = (uri, field) => {
           return finalItems
         }
 
-        throw new Error(
-          'Generation finished but no thumbnails were returned. Please try again.'
-        )
+        throw new Error('Generation finished but no thumbnails were returned. Please try again.')
       } catch (e) {
         if (e?.message === 'Cancelled') {
-          setStatus({ type: 'idle', message: undefined })
-          return
+          setStatus({type: 'idle', message: undefined})
+          return null
         }
         console.error('Error generating animated thumbnails', e)
-        setStatus({ type: 'error', message: e.message })
-        return
+        setStatus({type: 'error', message: e.message})
+        return null
       } finally {
         stopTicker()
       }
     },
-    [uri, pollThumbset, startTicker, stopTicker]
+    [uri, pollThumbset, startTicker, stopTicker],
   )
 
   const cancel = useCallback(() => {
@@ -285,7 +268,7 @@ export const useAnimatedThumbs = (uri, field) => {
       try {
         const fromVimeo = await getExistingVideoThumbnails(uri)
         if (fromVimeo?.length) toDelete = fromVimeo
-      } catch (e) {
+      } catch {
         // Fall back to local items if Vimeo lookup fails
       }
 
@@ -295,12 +278,12 @@ export const useAnimatedThumbs = (uri, field) => {
       setStatus(ps('success', null, 'delete'))
       setItems([])
     } catch (e) {
-      setStatus({ type: 'error', message: e.message })
+      setStatus({type: 'error', message: e.message})
     }
   }, [items, uri])
 
   const reset = useCallback(() => {
-    setStatus({ type: 'idle', message: undefined })
+    setStatus({type: 'idle', message: undefined})
     setAttempt(0)
     setElapsed(0)
   }, [])

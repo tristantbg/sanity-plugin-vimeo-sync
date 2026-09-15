@@ -1,10 +1,10 @@
-import { defineLocaleResourceBundle } from 'sanity'
+import {defineLocaleResourceBundle} from 'sanity'
 
 /**
  * The locale namespace for sanity-plugin-vimeo-sync.
  * Used with `useTranslation(vimeoSyncLocaleNamespace)`.
  */
-export const vimeoSyncLocaleNamespace = 'vimeo-sync' 
+export const vimeoSyncLocaleNamespace = 'vimeo-sync'
 
 /**
  * The default (en-US) locale bundle.

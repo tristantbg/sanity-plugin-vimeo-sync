@@ -61,8 +61,7 @@ const vimeoSyncLocaleStrings = {
   'missing-token.help-link': 'Vimeo Developer Dashboard',
 
   /** Suffix after the link */
-  'missing-token.help-suffix':
-    '. Required scopes: private, create, delete, video_files, public.',
+  'missing-token.help-suffix': '. Required scopes: private, create, delete, video_files, public.',
 
   /* -------------------------------------------------- */
   /*  Sync actions                                      */
@@ -110,8 +109,7 @@ const vimeoSyncLocaleStrings = {
   'sync.error-delete': 'Failed to delete {{id}}: {{message}}',
 
   /** Warning when document cannot be deleted due to references. {{id}} = document ID */
-  'sync.warn-referenced':
-    'Cannot delete {{id}}: still referenced by other documents',
+  'sync.warn-referenced': 'Cannot delete {{id}}: still referenced by other documents',
 
   /** Log: total videos to sync. {{count}} = total */
   'sync.log-total': 'Total videos to sync: {{count}}',
@@ -126,8 +124,7 @@ const vimeoSyncLocaleStrings = {
   'sync.log-removing': 'Removing {{count}} documents no longer in Vimeo import',
 
   /** Log: successfully removed obsolete documents. {{success}} / {{total}} */
-  'sync.log-removed':
-    'Successfully removed {{success}} of {{total}} obsolete documents',
+  'sync.log-removed': 'Successfully removed {{success}} of {{total}} obsolete documents',
 
   /* -------------------------------------------------- */
   /*  Inexistent / orphaned documents warning           */
@@ -158,8 +155,7 @@ const vimeoSyncLocaleStrings = {
   'video-list.loading': 'Loading documents…',
 
   /** Empty state – no documents at all */
-  'video-list.empty':
-    'No videos synced yet. Click "Load Vimeo videos" to import.',
+  'video-list.empty': 'No videos synced yet. Click "Load Vimeo videos" to import.',
 
   /** Empty state – search yielded no results */
   'video-list.no-match': 'No videos match your search.',

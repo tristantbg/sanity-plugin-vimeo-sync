@@ -1,9 +1,10 @@
-import { Box } from '@sanity/ui'
-import { useTranslation } from 'sanity'
-import { vimeoSyncLocaleNamespace } from '../../i18n'
+import {Box} from '@sanity/ui'
+import {useTranslation} from 'sanity'
 
-export function VideoThumbnail({ video }) {
-  const { t } = useTranslation(vimeoSyncLocaleNamespace)
+import {vimeoSyncLocaleNamespace} from '../../i18n'
+
+export function VideoThumbnail({video}) {
+  const {t} = useTranslation(vimeoSyncLocaleNamespace)
 
   return (
     <Box

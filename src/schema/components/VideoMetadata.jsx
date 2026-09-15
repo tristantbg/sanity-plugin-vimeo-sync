@@ -1,8 +1,9 @@
-import { LinkIcon } from '@sanity/icons'
-import { Box, Button, Flex, Stack, Text } from '@sanity/ui'
-import { useCallback } from 'react'
-import { useTranslation } from 'sanity'
-import { vimeoSyncLocaleNamespace } from '../../i18n'
+import {LinkIcon} from '@sanity/icons/Link'
+import {Box, Button, Flex, Stack, Text} from '@sanity/ui'
+import {useCallback} from 'react'
+import {useTranslation} from 'sanity'
+
+import {vimeoSyncLocaleNamespace} from '../../i18n'
 
 function formatDuration(seconds) {
   if (!seconds) return null
@@ -11,8 +12,8 @@ function formatDuration(seconds) {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-export function VideoMetadata({ video }) {
-  const { t } = useTranslation(vimeoSyncLocaleNamespace)
+export function VideoMetadata({video}) {
+  const {t} = useTranslation(vimeoSyncLocaleNamespace)
 
   const handleOpenVimeo = useCallback(() => {
     if (video?.link) window.open(video.link, '_blank')
@@ -21,7 +22,7 @@ export function VideoMetadata({ video }) {
   return (
     <Box padding={3}>
       <Flex align="center" gap={3}>
-        <Stack space={2} style={{ flex: 1 }}>
+        <Stack gap={2} style={{flex: 1}}>
           {video.name && (
             <Text size={1} weight="semibold">
               {video.name}

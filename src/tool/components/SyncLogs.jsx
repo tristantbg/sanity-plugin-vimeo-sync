@@ -1,7 +1,7 @@
-import { Card, Flex, Text } from '@sanity/ui'
-import { useEffect, useRef } from 'react'
+import {Card, Flex, Text} from '@sanity/ui'
+import {useEffect, useRef} from 'react'
 
-export function SyncLogs({ logs }) {
+export function SyncLogs({logs}) {
   const containerRef = useRef(null)
 
   useEffect(() => {
@@ -12,17 +12,6 @@ export function SyncLogs({ logs }) {
 
   if (!logs || logs.length === 0) {
     return null
-  }
-
-  const getLogColor = (type) => {
-    switch (type) {
-      case 'error':
-        return 'critical'
-      case 'warn':
-        return 'caution'
-      default:
-        return 'default'
-    }
   }
 
   return (
@@ -40,8 +29,8 @@ export function SyncLogs({ logs }) {
         ref={containerRef}
       >
         <Flex direction="column" gap={2}>
-          {logs.map((log, index) => (
-            <Card key={index}>
+          {logs.map((log) => (
+            <Card key={log.id}>
               <Text size={1}>{log.message}</Text>
             </Card>
           ))}

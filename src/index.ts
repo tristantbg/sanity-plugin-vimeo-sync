@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-expect-error -- plugin.jsx has no type declarations
 import * as plugin from './plugin'
 
 /**

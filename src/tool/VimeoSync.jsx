@@ -1,23 +1,24 @@
-import { useSecrets } from '@sanity/studio-secrets'
-import { Box, Card, Flex, Spinner, Text } from '@sanity/ui'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { useSource, useTranslation } from 'sanity'
-import { namespace } from '../constants'
-import { addKeys, setPluginConfig, vimeoFetch } from '../helpers'
-import { vimeoSyncLocaleNamespace } from '../i18n'
-import { getExistingVideoThumbnails } from '../schema/AnimatedThumbnails/utils'
-import { InexistentWarning } from './components/InexistentWarning'
-import { MissingTokenBanner } from './components/MissingTokenBanner'
-import { SyncActions } from './components/SyncActions'
-import { SyncFooter } from './components/SyncFooter'
-import { SyncHeader } from './components/SyncHeader'
-import { SyncLogs } from './components/SyncLogs'
-import { SyncProgress } from './components/SyncProgress'
-import { VideoList } from './components/VideoList'
+import {useSecrets} from '@sanity/studio-secrets'
+import {Box, Card, Flex, Spinner, Text} from '@sanity/ui'
+import {useCallback, useEffect, useRef, useState} from 'react'
+import {useClient, useTranslation} from 'sanity'
+
+import {namespace} from '../constants'
+import {addKeys, setPluginConfig, vimeoFetch} from '../helpers'
+import {vimeoSyncLocaleNamespace} from '../i18n'
+import {getExistingVideoThumbnails} from '../schema/AnimatedThumbnails/utils'
+import {InexistentWarning} from './components/InexistentWarning'
+import {MissingTokenBanner} from './components/MissingTokenBanner'
+import {SyncActions} from './components/SyncActions'
+import {SyncFooter} from './components/SyncFooter'
+import {SyncHeader} from './components/SyncHeader'
+import {SyncLogs} from './components/SyncLogs'
+import {SyncProgress} from './components/SyncProgress'
+import {VideoList} from './components/VideoList'
 
 export const VimeoSyncView = (options) => {
-  const { t } = useTranslation(vimeoSyncLocaleNamespace)
-  const { secrets, loading } = useSecrets(namespace)
+  const {t} = useTranslation(vimeoSyncLocaleNamespace)
+  const {secrets, loading} = useSecrets(namespace)
 
   useEffect(() => {
     if (!secrets?.apiKey && !loading) {
@@ -27,27 +28,27 @@ export const VimeoSyncView = (options) => {
         accessToken: secrets.apiKey,
       })
     }
-  }, [secrets, loading])
+  }, [secrets, loading, t])
 
-  const { apiKey: vimeoAccessToken } = secrets || {}
+  const {apiKey: vimeoAccessToken} = secrets || {}
 
   const [inexistent, setInexistent] = useState([])
   const [videosEntry, setVideosEntry] = useState([])
   const [logs, setLogs] = useState([])
 
-  const { folderId } = options
+  const {folderId} = options
   const [count, setCount] = useState(0)
   const [countPages, setCountPages] = useState(0)
   const [currentVideo, setCurrentVideo] = useState(0)
-  const [status, setStatus] = useState({ type: 'idle' })
+  const [status, setStatus] = useState({type: 'idle'})
 
-  const { getClient } = useSource()
-  const client = getClient({ apiVersion: '2025-02-07' })
+  const client = useClient({apiVersion: '2025-02-07'})
   const vimeoFolderId = folderId || process.env.SANITY_STUDIO_VIMEO_FOLDER_ID
 
   // Capture console logs - use refs to avoid setState during render
   const pendingLogsRef = useRef([])
   const flushTimeoutRef = useRef(null)
+  const logIdRef = useRef(0)
 
   useEffect(() => {
     const originalLog = console.log
@@ -56,9 +57,7 @@ export const VimeoSyncView = (options) => {
 
     const addLog = (type, ...args) => {
       const message = args
-        .map((arg) =>
-          typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-        )
+        .map((arg) => (typeof arg === 'object' ? JSON.stringify(arg) : String(arg)))
         .join(' ')
 
       const timestamp = new Date().toLocaleTimeString([], {
@@ -67,7 +66,7 @@ export const VimeoSyncView = (options) => {
         second: '2-digit',
       })
 
-      pendingLogsRef.current.push({ type, message, timestamp })
+      pendingLogsRef.current.push({id: logIdRef.current++, type, message, timestamp})
 
       // Batch updates to avoid setState during render
       if (!flushTimeoutRef.current) {
@@ -126,7 +125,7 @@ export const VimeoSyncView = (options) => {
         }),
       })
     },
-    [t]
+    [t],
   )
 
   async function importVimeo(url, existingIds = null) {
@@ -148,9 +147,7 @@ export const VimeoSyncView = (options) => {
       const transaction = client.transaction()
       const allVideos = apiResponse.data
       const videos = existingIds
-        ? allVideos.filter(
-            (v) => !existingIds.has(`vimeo-${v.uri.split('/').pop()}`)
-          )
+        ? allVideos.filter((v) => !existingIds.has(`vimeo-${v.uri.split('/').pop()}`))
         : allVideos
 
       // Keep concurrency below Vimeo's ~5 req/sec budget so the adaptive
@@ -174,23 +171,20 @@ export const VimeoSyncView = (options) => {
               height: video.height,
               link: video.link,
               name: video.name,
-              pictures: addKeys(video.pictures?.sizes || [], 'link'),
-              srcset: addKeys(video.files || [], 'md5'),
+              pictures: addKeys(video.pictures?.sizes || []),
+              srcset: addKeys(video.files || []),
               width: video.width,
             }
 
             // Read the editor-managed animatedThumbnails (loopVideo,
             // startTime, duration) from the existing Sanity document so a
             // full re-sync via createOrReplace doesn't wipe them.
-            const existingDoc = await client.fetch(
-              '*[_id == $id][0]{animatedThumbnails}',
-              { id: videoObject._id }
-            )
+            const existingDoc = await client.fetch('*[_id == $id][0]{animatedThumbnails}', {
+              id: videoObject._id,
+            })
             const existingAnimated = existingDoc?.animatedThumbnails
 
-            const existingThumbnails = await getExistingVideoThumbnails(
-              video.uri
-            )
+            const existingThumbnails = await getExistingVideoThumbnails(video.uri)
             const itemsWithKeys = existingThumbnails?.length
               ? existingThumbnails.map((item) => {
                   const sizesWithKey = item.sizes.map((size) => ({
@@ -214,18 +208,15 @@ export const VimeoSyncView = (options) => {
                   ? {
                       thumbnails: itemsWithKeys,
                       startTime:
-                        existingAnimated?.startTime ??
-                        itemsWithKeys[0]?.sizes[0]?.startTime,
-                      duration:
-                        existingAnimated?.duration ??
-                        itemsWithKeys[0]?.sizes[0]?.duration,
+                        existingAnimated?.startTime ?? itemsWithKeys[0]?.sizes[0]?.startTime,
+                      duration: existingAnimated?.duration ?? itemsWithKeys[0]?.sizes[0]?.duration,
                     }
                   : {}),
               }
             }
 
             return videoObject
-          })
+          }),
         )
 
         results.forEach((videoObject) => {
@@ -233,9 +224,7 @@ export const VimeoSyncView = (options) => {
           videosEntry.push(videoObject)
         })
 
-        setCurrentVideo(
-          Math.min(i + BATCH_SIZE, videos.length) + (page - 1) * perPage
-        )
+        setCurrentVideo(Math.min(i + BATCH_SIZE, videos.length) + (page - 1) * perPage)
       }
 
       await transaction.commit()
@@ -248,28 +237,26 @@ export const VimeoSyncView = (options) => {
         handleSyncFinished(videosEntry.length)
       }
     } catch (error) {
-      console.error(t('sync.error-update', { message: error.message }))
-      setStatus({ type: 'error', message: error.message })
+      console.error(t('sync.error-update', {message: error.message}))
+      setStatus({type: 'error', message: error.message})
     }
   }
 
   async function deleteIncompatibleVimeoDocuments(videos) {
     setInexistent([])
     const inexistent = []
-    const valid_ids = videos.map((v) => v._id)
+    const validIds = new Set(videos.map((v) => v._id))
     const query = '*[_type == "vimeo"] {_id}'
 
     try {
       const documents = await client.fetch(query)
-      const documentsToDelete = documents.filter(
-        (document) => !valid_ids.includes(document._id)
-      )
+      const documentsToDelete = documents.filter((document) => !validIds.has(document._id))
 
       if (documentsToDelete.length === 0) {
         return
       }
 
-      console.log(t('sync.log-removing', { count: documentsToDelete.length }))
+      console.log(t('sync.log-removing', {count: documentsToDelete.length}))
 
       // Try individual deletion to handle reference constraints gracefully
       let successCount = 0
@@ -279,16 +266,11 @@ export const VimeoSyncView = (options) => {
           successCount++
         } catch (e) {
           // Check if it's a reference constraint error
-          if (
-            e.message &&
-            e.message.includes('cannot be deleted as there are references')
-          ) {
-            console.warn(t('sync.warn-referenced', { id: document._id }))
+          if (e.message && e.message.includes('cannot be deleted as there are references')) {
+            console.warn(t('sync.warn-referenced', {id: document._id}))
             inexistent.push(document._id)
           } else {
-            console.error(
-              t('sync.error-delete', { id: document._id, message: e.message })
-            )
+            console.error(t('sync.error-delete', {id: document._id, message: e.message}))
             inexistent.push(document._id)
           }
         }
@@ -299,18 +281,18 @@ export const VimeoSyncView = (options) => {
           t('sync.log-removed', {
             success: successCount,
             total: documentsToDelete.length,
-          })
+          }),
         )
       }
 
       setInexistent(inexistent)
-    } catch (error) {
+    } catch {
       console.error(t('sync.error-cleanup'))
     }
   }
 
   async function fetchVimeo() {
-    setStatus({ type: 'loading' })
+    setStatus({type: 'loading'})
     setVideosEntry([])
     setLogs([])
     try {
@@ -322,17 +304,17 @@ export const VimeoSyncView = (options) => {
       const data = await res.json()
       setCount(data.total)
       setCountPages(Math.ceil(data.total / data.per_page))
-      console.log(t('sync.log-total', { count: data.total }))
+      console.log(t('sync.log-total', {count: data.total}))
       await importVimeo(data.paging.first)
     } catch (error) {
-      console.error(t('sync.error-fetch', { message: error.message }))
-      setStatus({ type: 'error', message: error.message })
+      console.error(t('sync.error-fetch', {message: error.message}))
+      setStatus({type: 'error', message: error.message})
       setCurrentVideo(0)
     }
   }
 
   async function fetchVimeoNew() {
-    setStatus({ type: 'loading' })
+    setStatus({type: 'loading'})
     setVideosEntry([])
     setLogs([])
     try {
@@ -352,15 +334,15 @@ export const VimeoSyncView = (options) => {
         t('sync.log-new-found', {
           count: Math.max(0, newCount),
           total: data.total,
-        })
+        }),
       )
       if (existingIds.size > 0) {
-        console.log(t('sync.log-new-skipped', { count: existingIds.size }))
+        console.log(t('sync.log-new-skipped', {count: existingIds.size}))
       }
       await importVimeo(data.paging.first, existingIds)
     } catch (error) {
-      console.error(t('sync.error-fetch', { message: error.message }))
-      setStatus({ type: 'error', message: error.message })
+      console.error(t('sync.error-fetch', {message: error.message}))
+      setStatus({type: 'error', message: error.message})
       setCurrentVideo(0)
     }
   }
@@ -380,25 +362,17 @@ export const VimeoSyncView = (options) => {
 
   return (
     <Card
-      tone={
-        !vimeoAccessToken || status.type === 'error' ? 'critical' : 'default'
-      }
+      tone={!vimeoAccessToken || status.type === 'error' ? 'critical' : 'default'}
       height={'stretch'}
       display={'grid'}
-      style={{ minHeight: '100%', gridTemplateRows: '1fr auto' }}
+      style={{minHeight: '100%', gridTemplateRows: '1fr auto'}}
     >
       <Box>
         <Card borderBottom padding={3} tone={'inherit'}>
           <SyncHeader />
         </Card>
 
-        <Flex
-          direction={'column'}
-          gap={4}
-          paddingX={3}
-          paddingY={4}
-          align={'flex-start'}
-        >
+        <Flex direction={'column'} gap={4} paddingX={3} paddingY={4} align={'flex-start'}>
           {!vimeoAccessToken && <MissingTokenBanner />}
 
           <SyncActions
@@ -412,11 +386,7 @@ export const VimeoSyncView = (options) => {
         </Flex>
 
         {status.type === 'loading' && count && currentVideo ? (
-          <SyncProgress
-            count={count}
-            countPages={countPages}
-            currentVideo={currentVideo}
-          />
+          <SyncProgress count={count} countPages={countPages} currentVideo={currentVideo} />
         ) : null}
 
         {status.type === 'loading' && <SyncLogs logs={logs} />}

@@ -1,9 +1,10 @@
-import { Box, Card, Flex, Text } from '@sanity/ui'
-import { useTranslation } from 'sanity'
-import { vimeoSyncLocaleNamespace } from '../../i18n'
+import {Card, Flex, Text} from '@sanity/ui'
+import {useTranslation} from 'sanity'
 
-export function SyncProgress({ count, countPages, currentVideo }) {
-  const { t } = useTranslation(vimeoSyncLocaleNamespace)
+import {vimeoSyncLocaleNamespace} from '../../i18n'
+
+export function SyncProgress({count, countPages, currentVideo}) {
+  const {t} = useTranslation(vimeoSyncLocaleNamespace)
 
   return (
     <Card paddingX={3} paddingBottom={3}>
@@ -17,9 +18,7 @@ export function SyncProgress({ count, countPages, currentVideo }) {
         }}
       >
         <Flex direction={'column'} gap={3}>
-          {countPages && (
-            <Text size={1}>{t('sync.videos-found', { count })}</Text>
-          )}
+          {countPages && <Text size={1}>{t('sync.videos-found', {count})}</Text>}
           <div
             style={{
               width: '100%',
@@ -40,9 +39,7 @@ export function SyncProgress({ count, countPages, currentVideo }) {
             />
           </div>
           {count && currentVideo && (
-            <Text size={1}>
-              {t('sync.progress', { current: currentVideo, total: count })}
-            </Text>
+            <Text size={1}>{t('sync.progress', {current: currentVideo, total: count})}</Text>
           )}
         </Flex>
       </Card>

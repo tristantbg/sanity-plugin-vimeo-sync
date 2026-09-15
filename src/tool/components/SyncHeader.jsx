@@ -1,11 +1,11 @@
-import { SyncIcon } from '@sanity/icons'
-import { SettingsView, useSecrets } from '@sanity/studio-secrets'
-import { Button, Flex, Heading } from '@sanity/ui'
-import { useState } from 'react'
-import { FaVimeoV } from 'react-icons/fa'
-import { useTranslation } from 'sanity'
-import { namespace } from '../../constants'
-import { vimeoSyncLocaleNamespace } from '../../i18n'
+import {SettingsView} from '@sanity/studio-secrets'
+import {Button, Flex, Heading} from '@sanity/ui'
+import {useState} from 'react'
+import {FaVimeoV} from 'react-icons/fa'
+import {useTranslation} from 'sanity'
+
+import {namespace} from '../../constants'
+import {vimeoSyncLocaleNamespace} from '../../i18n'
 
 const pluginConfigKeys = [
   {
@@ -15,7 +15,7 @@ const pluginConfigKeys = [
 ]
 
 export function SyncHeader() {
-  const { t } = useTranslation(vimeoSyncLocaleNamespace)
+  const {t} = useTranslation(vimeoSyncLocaleNamespace)
   const [showSettings, setShowSettings] = useState(false)
 
   return (
@@ -32,9 +32,7 @@ export function SyncHeader() {
           fontSize={0}
           mode="bleed"
           onClick={() => setShowSettings(!showSettings)}
-          text={
-            showSettings ? t('settings.hide-token') : t('settings.show-token')
-          }
+          text={showSettings ? t('settings.hide-token') : t('settings.show-token')}
         />
       </Flex>
 
