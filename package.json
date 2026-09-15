@@ -81,7 +81,8 @@
   "packageManager": "pnpm@12.4.1",
   "sanityPlugin": {
     "verifyPackage": {
-      "eslintImports": false
+      "eslintImports": false,
+      "tsconfig": false
     }
   }
 }

@@ -4,7 +4,7 @@
     "outDir": "./dist",
 
     "target": "esnext",
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "module": "preserve",
     "moduleResolution": "bundler",
     "esModuleInterop": true,
